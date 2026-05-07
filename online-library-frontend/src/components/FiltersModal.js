@@ -92,7 +92,10 @@ const FiltersModal = ({ isOpen, onClose, genres, authors = [], onApplyFilters })
           Скинути фільтри
         </button>
 
-        <button style={applyBtnStyle} onClick={() => onApplyFilters({ selectedGenres, selectedAuthors, priceRange, selectedYears, pageFilter, onlyWithImages })}>
+        <button 
+          style={applyBtnStyle} 
+          onClick={() => onApplyFilters({ selectedGenres, selectedAuthors, priceRange, selectedYears, pageFilter, onlyWithImages })}
+        >
           Застосувати
         </button>
       </div>
@@ -100,21 +103,20 @@ const FiltersModal = ({ isOpen, onClose, genres, authors = [], onApplyFilters })
   );
 };
 
-// --- ВИПРАВЛЕНИЙ КОМПОНЕНТ ДЛЯ ПЛАВНОСТІ ---
 const FilterSection = ({ title, id, active, onToggle, children }) => {
   const isOpen = active === id;
   
   return (
     <div style={filterSectionStyle}>
       <div style={sectionHeaderStyle} onClick={() => onToggle(id)}>
-        {title} 
+        <span style={{ color: isOpen ? 'var(--accent)' : 'inherit', transition: 'color 0.3s' }}>{title}</span>
         <span style={{ 
           transition: 'transform 0.3s ease', 
+          color: isOpen ? 'var(--accent)' : '#ccc',
           transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)' 
         }}>▼</span>
       </div>
       
-      {/* Контейнер з анімацією виїзду */}
       <div style={{
         maxHeight: isOpen ? '400px' : '0',
         opacity: isOpen ? 1 : 0,
@@ -130,39 +132,100 @@ const FilterSection = ({ title, id, active, onToggle, children }) => {
   );
 };
 
-// --- СТИЛІ ---
-const resetBtnStyle = { 
-  width: '100%', marginTop: '15px', padding: '12px', background: 'white', color: '#e74c3c', 
-  border: '1px solid #ddd', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', transition: '0.3s'
+// --- ОНОВЛЕНІ СТИЛІ ---
+
+const overlayStyle = { 
+  position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, 
+  backgroundColor: 'rgba(0, 0, 0, 0.4)', // Трохи світліший оверлей
+  display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000 
 };
 
-const applyBtnStyle = { 
-  width: '100%', marginTop: '10px', padding: '12px', background: '#27ae60', 
-  color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' 
+const modalStyle = { 
+  backgroundColor: 'var(--card-bg)', 
+  padding: '30px', 
+  borderRadius: '16px', 
+  width: '400px', maxWidth: '95%', maxHeight: '85vh', 
+  position: 'relative', display: 'flex', flexDirection: 'column', 
+  color: 'var(--text-main)', 
+  boxShadow: '0 20px 40px rgba(0,0,0,0.1)' 
 };
 
-const overlayStyle = { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0, 0, 0, 0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000 };
-const modalStyle = { backgroundColor: 'white', padding: '30px', borderRadius: '12px', width: '400px', maxWidth: '90%', maxHeight: '80vh', position: 'relative', display: 'flex', flexDirection: 'column', color: '#333', boxShadow: '0 10px 25px rgba(0,0,0,0.5)' };
 const filterContainerStyle = { 
   overflowY: 'auto', 
   paddingRight: '10px',
-  marginTop: '25px' 
+  marginTop: '15px' 
 };
-const filterSectionStyle = { borderBottom: '1px solid #eee', padding: '15px 0' };
-const sectionHeaderStyle = { display: 'flex', justifyContent: 'space-between', cursor: 'pointer', fontWeight: 'bold', color: '#2c3e50', padding: '5px 0' };
-const dropdownListStyle = { display: 'flex', flexDirection: 'column', padding: '10px', background: '#f1f1f1', borderRadius: '5px', color: '#333' };
-const labelStyle = { margin: '8px 0', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', color: '#555', fontSize: '14px' };
-const inputStyle = { padding: '8px', width: '100%', borderRadius: '4px', border: '1px solid #ddd' };
-const closeBtnStyle = { position: 'absolute', top: '10px', right: '15px', border: 'none', background: 'none', fontSize: '20px', cursor: 'pointer', color: '#333' };
-const checkboxLabelStyle = { padding: '15px 0', display: 'flex', alignItems: 'center', gap: '10px', fontWeight: 'bold', cursor: 'pointer', color: '#333', userSelect: 'none' };
+
+const filterSectionStyle = { 
+  borderBottom: '1px solid var(--border-color)', 
+  padding: '12px 0' 
+};
+
+const sectionHeaderStyle = { 
+  display: 'flex', justifyContent: 'space-between', 
+  cursor: 'pointer', fontWeight: '600', 
+  color: 'var(--text-main)', padding: '8px 0',
+  fontSize: '15px'
+};
+
+const dropdownListStyle = { 
+  display: 'flex', flexDirection: 'column', 
+  padding: '12px', background: 'var(--bg-color)', 
+  borderRadius: '8px', color: 'var(--text-main)' 
+};
+
+const labelStyle = { 
+  margin: '6px 0', cursor: 'pointer', 
+  display: 'flex', alignItems: 'center', gap: '8px', 
+  color: 'var(--text-muted)', fontSize: '14px' 
+};
+
+const inputStyle = { 
+  padding: '10px', width: '100%', 
+  borderRadius: '8px', border: '1px solid var(--border-color)',
+  background: 'var(--card-bg)',
+  color: 'var(--text-main)',
+  outline: 'none'
+};
+
+const closeBtnStyle = { 
+  position: 'absolute', top: '15px', right: '15px', 
+  border: 'none', background: 'none', fontSize: '18px', 
+  cursor: 'pointer', color: 'var(--text-muted)' 
+};
+
+const checkboxLabelStyle = { 
+  padding: '20px 0', display: 'flex', alignItems: 'center', 
+  gap: '10px', fontWeight: '600', cursor: 'pointer', 
+  color: 'var(--text-main)', userSelect: 'none' 
+};
+
+const resetBtnStyle = { 
+  width: '100%', marginTop: '10px', padding: '12px', 
+  background: 'transparent', color: '#e74c3c', 
+  border: '1px solid #fed7d7', borderRadius: '10px', 
+  cursor: 'pointer', fontWeight: '600', transition: '0.3s'
+};
+
+const applyBtnStyle = { 
+  width: '100%', marginTop: '10px', padding: '12px', 
+  background: 'var(--accent)', 
+  color: 'white', border: 'none', borderRadius: '10px', 
+  cursor: 'pointer', fontWeight: 'bold', transition: '0.3s'
+};
 
 const styleTag = (
   <style>
     {`
       .reset-button:hover {
-        background-color: #e74c3c !important;
-        color: white !important;
-        border-color: #e74c3c !important;
+        background-color: #fff5f5 !important;
+        border-color: #feb2b2 !important;
+      }
+      input[type="checkbox"] {
+        accent-color: var(--accent);
+        width: 16px;
+        height: 16px;
+        cursor: pointer;
       }
     `}
   </style>
@@ -171,32 +234,13 @@ const styleTag = (
 const modalAnimationStyles = (
   <style>
     {`
-      /* Анімація для темного фону — просто плавна прозорість */
-      @keyframes overlayFade {
-        from { opacity: 0; }
-        to { opacity: 1; }
+      @keyframes overlayFade { from { opacity: 0; } to { opacity: 1; } }
+      @keyframes modalSlideUp { 
+        from { opacity: 0; transform: translateY(30px) scale(0.95); } 
+        to { opacity: 1; transform: translateY(0) scale(1); } 
       }
-
-      /* Анімація для самого вікна — м'який виїзд вгору + збільшення */
-      @keyframes modalSlideUp {
-        from { 
-          opacity: 0; 
-          transform: translateY(20px) scale(0.98); 
-        }
-        to { 
-          opacity: 1; 
-          transform: translateY(0) scale(1); 
-        }
-      }
-
-      .modal-overlay {
-        animation: overlayFade 0.3s ease-out;
-        backdrop-filter: blur(3px); /* Додаємо легке розмиття фону для елітності */
-      }
-
-      .modal-overlay > div {
-        animation: modalSlideUp 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
-      }
+      .modal-overlay { animation: overlayFade 0.3s ease-out; backdrop-filter: blur(4px); }
+      .modal-overlay > div { animation: modalSlideUp 0.4s cubic-bezier(0.165, 0.84, 0.44, 1); }
     `}
   </style>
 );

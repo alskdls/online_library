@@ -1,5 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { LayoutGrid, Sparkles, Trophy, Shuffle, PlusCircle, User as UserIcon } from 'lucide-react';
 
 const Sidebar = ({ onApplyFilters, isDarkMode, toggleTheme }) => {
   const navigate = useNavigate();
@@ -28,26 +29,46 @@ const Sidebar = ({ onApplyFilters, isDarkMode, toggleTheme }) => {
         {`
           .sidebar-item {
             padding: 12px 15px;
-            border-radius: 10px;
+            border-radius: 12px;
             cursor: pointer;
-            transition: all 0.2s ease;
-            color: #555;
+            transition: background-color 0.3s ease, color 0.3s ease !important;
+            color: #d7ccc8;
             font-size: 14px;
             font-weight: 500;
-            text-align: left;
-          }
-          .sidebar-item:hover {
-            background-color: #f1f3f5;
-            color: #2c3e50;
-            padding-left: 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 4px;
           }
           
+          .sidebar-item:hover {
+            background-color: #5d4037 !important;
+            color: #fff !important;
+          }
+
+          .user-profile-field-sidebar {
+            transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease !important;
+          }
+          
+          .user-profile-field-sidebar:hover {
+            background-color: #5d4037 !important; 
+            color: #fff !important;
+          }
+
+          .user-profile-field-sidebar:hover span {
+            color: #fff !important;
+          }
+
           .theme-toggle-container {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 10px 15px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 14px;
+            margin-bottom: 20px;
           }
+
           .switch {
             position: relative;
             display: inline-block;
@@ -59,7 +80,7 @@ const Sidebar = ({ onApplyFilters, isDarkMode, toggleTheme }) => {
             position: absolute;
             cursor: pointer;
             top: 0; left: 0; right: 0; bottom: 0;
-            background-color: #ccc;
+            background-color: #4a3728;
             transition: .4s;
             border-radius: 20px;
           }
@@ -68,30 +89,47 @@ const Sidebar = ({ onApplyFilters, isDarkMode, toggleTheme }) => {
             content: "";
             height: 14px; width: 14px;
             left: 3px; bottom: 3px;
-            background-color: white;
+            background-color: #fff;
             transition: .4s;
             border-radius: 50%;
           }
-          input:checked + .slider { background-color: #2ecc71; }
+          input:checked + .slider { background-color: var(--accent); }
           input:checked + .slider:before { transform: translateX(18px); }
+
+          .action-btn {
+            transition: all 0.3s ease !important;
+          }
+          .action-btn:hover {
+            opacity: 0.9;
+          }
         `}
       </style>
 
-      {/* ВЕРХНЯ НАВІГАЦІЯ (БЕЗ ЕМОДЗІ ТА ЗАГОЛОВКІВ) */}
-      <div className="sidebar-item" onClick={() => navigate('/')}>Головна</div>
-      <div className="sidebar-item" onClick={() => handleQuickFilter('new')}>Новинки</div>
-      <div className="sidebar-item" onClick={() => handleQuickFilter('top')}>Топ книги</div>
-      <div className="sidebar-item" onClick={() => navigate('/recommendations')}>Рекомендації</div>
+      {/* ОСНОВНА НАВІГАЦІЯ */}
+      <div className="sidebar-item" onClick={() => navigate('/')}>
+        <LayoutGrid size={18} /> Головна
+      </div>
+      <div className="sidebar-item" onClick={() => handleQuickFilter('new')}>
+        <Sparkles size={18} /> Новинки
+      </div>
+      <div className="sidebar-item" onClick={() => handleQuickFilter('top')}>
+        <Trophy size={18} /> Топ книги
+      </div>
+      <div className="sidebar-item" onClick={() => navigate('/recommendations')}>
+        <Sparkles size={18} color="var(--accent)" /> Рекомендації
+      </div>
 
-      <div style={{ height: '40px' }}></div>
+      <div style={{ height: '30px' }}></div>
 
-      {/* РОЗВАЖАЛЬНІ КНОПКИ */}
-      <div className="sidebar-item" onClick={() => alert('Шукаємо випадкову книгу...')}>Рандомна книга</div>
+      {/* ДОДАТКОВО */}
+      <div className="sidebar-item" onClick={() => alert('Шукаємо випадкову книгу...')}>
+        <Shuffle size={18} /> Рандомна книга
+      </div>
 
       <div style={{ marginTop: 'auto' }}>
-        {/* ПЕРЕМИКАЧ ТЕМИ ЯК ТИ ХОТІВ */}
+        {/* ПЕРЕМИКАЧ ТЕМИ */}
         <div className="theme-toggle-container">
-          <span style={{ fontSize: '14px', color: '#555', fontWeight: '500' }}>Темна тема</span>
+          <span style={{ fontSize: '13px', color: '#d7ccc8', fontWeight: '500' }}>Темна тема</span>
           <label className="switch">
             <input type="checkbox" checked={isDarkMode} onChange={toggleTheme} />
             <span className="slider"></span>
@@ -99,26 +137,38 @@ const Sidebar = ({ onApplyFilters, isDarkMode, toggleTheme }) => {
         </div>
       </div>
 
-      {/* НИЖНІЙ БЛОК (ТОЙ САМИЙ ДИЗАЙН З КАРТКОЮ) */}
+      {/* НИЖНІЙ БЛОК (АККАУНТ) */}
       <div style={bottomSectionStyle}>
         {user ? (
           <>
-            <div style={userCardStyle}>
-              <div style={avatarMiniStyle}>👤</div>
-              <div style={{ overflow: 'hidden' }}>
-                <div style={userNameStyle}>{user.username}</div>
-                <div style={userRoleStyle}>{user.role}</div>
+            <div 
+              className="user-profile-field-sidebar"
+              // ЗМІНЕНО: тепер веде на шлях з ID, як і в хедері
+              onClick={() => navigate(`/profile/${user.id}`)} 
+              style={userFieldStyle}
+            >
+              <UserIcon size={18} color="var(--accent)" />
+              <div style={{ display: 'flex', flexDirection: 'column', flex: 1, textAlign: 'center', lineHeight: '1.2' }}>
+                <span style={usernameStyle}>{user.username}</span>
+                <span style={{ 
+                  fontSize: '10px', 
+                  color: user.role === 'admin' ? 'var(--accent)' : '#a1887f',
+                  fontWeight: 'bold',
+                  textTransform: 'uppercase'
+                }}>
+                  {user.role}
+                </span>
               </div>
             </div>
 
             {user.role === 'admin' && (
-              <button onClick={() => navigate('/add-book')} style={addBookBtnStyle}>
-                + Додати книгу
+              <button onClick={() => navigate('/add-book')} className="action-btn" style={addBookBtnStyle}>
+                <PlusCircle size={16} /> Додати книгу
               </button>
             )}
           </>
         ) : (
-          <button onClick={() => navigate('/login')} style={loginBtnStyle}>
+          <button onClick={() => navigate('/login')} className="action-btn" style={loginBtnStyle}>
             Увійти в кабінет
           </button>
         )}
@@ -127,86 +177,12 @@ const Sidebar = ({ onApplyFilters, isDarkMode, toggleTheme }) => {
   );
 };
 
-// --- СТИЛІ ---
-
-const sidebarContainerStyle = {
-  width: '240px',
-  padding: '20px 15px',
-  borderRight: '1px solid #eee',
-  display: 'flex',
-  flexDirection: 'column',
-  backgroundColor: '#fff',
-  height: 'calc(100vh - 70px)',
-  position: 'sticky',
-  top: '70px',
-  boxSizing: 'border-box'
-};
-
-const bottomSectionStyle = {
-  paddingTop: '20px',
-  borderTop: '1px solid #f1f1f1'
-};
-
-const userCardStyle = {
-  display: 'flex',
-  alignItems: 'center',
-  gap: '10px',
-  padding: '10px',
-  background: '#f8f9fa',
-  borderRadius: '12px',
-  marginBottom: '15px'
-};
-
-const avatarMiniStyle = {
-  width: '35px',
-  height: '35px',
-  background: '#fff',
-  borderRadius: '50%',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  fontSize: '18px',
-  border: '1px solid #eee'
-};
-
-const userNameStyle = {
-  fontSize: '13px',
-  fontWeight: 'bold',
-  color: '#2c3e50',
-  whiteSpace: 'nowrap',
-  overflow: 'hidden',
-  textOverflow: 'ellipsis'
-};
-
-const userRoleStyle = {
-  fontSize: '11px',
-  color: '#999',
-  textTransform: 'capitalize'
-};
-
-const addBookBtnStyle = { 
-  backgroundColor: '#2ecc71', 
-  color: 'white', 
-  width: '100%', 
-  padding: '12px', 
-  border: 'none', 
-  borderRadius: '10px', 
-  cursor: 'pointer', 
-  fontWeight: 'bold', 
-  fontSize: '13px',
-  marginBottom: '10px',
-  transition: '0.3s'
-};
-
-const loginBtnStyle = {
-  backgroundColor: '#3498db',
-  color: 'white',
-  width: '100%',
-  padding: '12px',
-  border: 'none',
-  borderRadius: '10px',
-  cursor: 'pointer',
-  fontWeight: 'bold'
-};
+// --- СТИЛІ (без змін) ---
+const sidebarContainerStyle = { width: '240px', padding: '20px 15px', backgroundColor: '#2c1e1a', display: 'flex', flexDirection: 'column', alignSelf: 'stretch', boxSizing: 'border-box', borderRight: '1px solid rgba(255,255,255,0.05)', zIndex: 1000 };
+const bottomSectionStyle = { paddingTop: '20px', borderTop: '1px solid rgba(255, 255, 255, 0.1)' };
+const userFieldStyle = { display: 'flex', alignItems: 'center', padding: '6px 15px', borderRadius: '20px', border: '1px solid var(--accent)', cursor: 'pointer', backgroundColor: 'transparent', color: '#f5f5f5', marginBottom: '15px' };
+const usernameStyle = { fontSize: '14px', fontWeight: '600' };
+const addBookBtnStyle = { backgroundColor: 'var(--accent)', color: 'white', width: '100%', padding: '12px', border: 'none', borderRadius: '12px', cursor: 'pointer', fontWeight: 'bold', fontSize: '13px', marginBottom: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' };
+const loginBtnStyle = { backgroundColor: 'transparent', color: '#fff', width: '100%', padding: '12px', border: '1px solid var(--accent)', borderRadius: '20px', cursor: 'pointer', fontWeight: 'bold', fontSize: '13px' };
 
 export default Sidebar;

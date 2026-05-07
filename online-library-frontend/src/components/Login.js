@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-const Login = () => {
+const Login = ({ socket }) => { // Приймаємо socket як пропс
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const navigate = useNavigate();
@@ -19,9 +19,15 @@ const Login = () => {
 
       if (response.ok) {
         localStorage.setItem('user', JSON.stringify(data.user));
+        
+        // ВІДПРАВЛЯЄМО СИГНАЛ СЕРВЕРУ ЧЕРЕЗ СОКЕТ
+        if (socket) {
+          socket.emit('user_online', data.user.id);
+        }
+
         alert(`Ласкаво просимо, ${data.user.username}!`);
         navigate('/'); 
-        window.location.reload();
+        window.location.reload(); 
       } else {
         alert(data.message || "Помилка входу");
       }

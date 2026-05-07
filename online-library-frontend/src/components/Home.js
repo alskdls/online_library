@@ -1,15 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom'; // Додали для переходу
+import { useNavigate } from 'react-router-dom';
 import BookCard from './BookCard';
 
 const Home = ({ searchQuery, extraFilters }) => {
   const [books, setBooks] = useState([]);
   const [genres, setGenres] = useState([]);
-  const [favorites, setFavorites] = useState([]);
+  const [favorites, setFavorites] = useState([]); 
   const user = JSON.parse(localStorage.getItem('user'));
   const navigate = useNavigate();
 
   useEffect(() => {
+    // 1. Завантажуємо книги та жанри
     Promise.all([
       fetch('http://localhost:5000/books').then(res => res.json()),
       fetch('http://localhost:5000/genres').then(res => res.json())
@@ -18,15 +19,19 @@ const Home = ({ searchQuery, extraFilters }) => {
       setBooks(booksData);
       setGenres(genresData);
     })
-    .catch(err => console.error("Помилка завантаження:", err));
+    .catch(err => console.error("Помилка завантаження даних:", err));
 
-    if (user) {
+    // 2. Завантажуємо обране (якщо юзер авторизований)
+    if (user && user.id) {
       fetch(`http://localhost:5000/favorites/${user.id}`)
         .then(res => res.json())
-        .then(data => setFavorites(data))
-        .catch(err => console.error(err));
+        .then(data => {
+          // Сервер тепер шле масив чисел [1, 7, 12], тому просто зберігаємо його
+          setFavorites(data);
+        })
+        .catch(err => console.error("Помилка завантаження обраного:", err));
     }
-  }, []);
+  }, []); // Помилка була десь тут, тепер тут чистий масив залежностей
 
   return (
     <div style={{ padding: '40px 20px', maxWidth: '1400px', margin: '0 auto' }}>
@@ -39,7 +44,6 @@ const Home = ({ searchQuery, extraFilters }) => {
 
         return (
           <section key={genre.id} style={{ marginBottom: '60px' }}>
-            {/* Центрований заголовок-посилання */}
             <div style={{ textAlign: 'center', marginBottom: '30px' }}>
               <h2 
                 className="genre-title-link"
@@ -56,6 +60,7 @@ const Home = ({ searchQuery, extraFilters }) => {
                 <BookCard 
                   key={book.id} 
                   book={book} 
+                  // Перевіряємо, чи є ID книги в масиві обраного
                   isFavoriteInitial={favorites.includes(book.id)} 
                 />
               ))}
@@ -64,46 +69,17 @@ const Home = ({ searchQuery, extraFilters }) => {
         );
       })}
       
-      {/* Додамо трохи CSS прямо тут для ефекту наведення на заголовок */}
       <style>{`
-        .genre-title-link {
-          cursor: pointer;
-          display: inline-block;
-          transition: transform 0.3s ease, color 0.3s ease;
-        }
-        .genre-title-link:hover {
-          color: #3498db;
-          transform: scale(1.05);
-        }
+        .genre-title-link { cursor: pointer; display: inline-block; transition: transform 0.3s ease, color 0.3s ease; color: var(--text-main); }
+        .genre-title-link:hover { color: var(--accent); transform: scale(1.05); }
       `}</style>
     </div>
   );
 };
 
-// --- СТИЛІ ---
-
-const genreTitleStyle = {
-  fontSize: '28px',
-  color: '#2c3e50',
-  margin: '0 0 10px 0',
-  fontWeight: 'bold',
-  textTransform: 'uppercase',
-  letterSpacing: '1px'
-};
-
-const underlineStyle = {
-  height: '4px',
-  width: '60px',
-  background: '#3498db',
-  margin: '0 auto',
-  borderRadius: '2px'
-};
-
-const booksGridStyle = {
-  display: 'flex',
-  flexWrap: 'wrap',
-  gap: '30px',
-  justifyContent: 'center' // Теж центруємо книги для симетрії
-};
+// Стилі
+const genreTitleStyle = { fontSize: '28px', color: 'var(--text-main)', margin: '0 0 10px 0', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '1px' };
+const underlineStyle = { height: '4px', width: '60px', background: 'var(--accent)', margin: '0 auto', borderRadius: '2px' };
+const booksGridStyle = { display: 'flex', flexWrap: 'wrap', gap: '30px', justifyContent: 'center' };
 
 export default Home;
