@@ -2,7 +2,6 @@ import './App.css';
 import React, { useState, useEffect } from 'react'; // Додано useEffect
 import { Routes, Route } from 'react-router-dom';
 import io from 'socket.io-client'; // Додано імпорт сокетів
-import { API_URL } from './config';
 
 import Header from './components/Header';
 import Footer from './components/Footer';
