@@ -7,18 +7,28 @@ const { Server } = require('socket.io');
 const app = express();
 const pool = require('./db'); 
 const bcrypt = require('bcryptjs');
-const PORT = 5000;
+
+// Render сам назначает порт через переменную среды, поэтому используем её
+const PORT = process.env.PORT || 5000; 
 
 // --- НАЛАШТУВАННЯ СЕРВЕРА ТА SOCKET.IO ---
 const server = http.createServer(app);
+
+// ТУТ ИЗМЕНЕНИЕ: Разрешаем сокетам принимать соединения от твоего фронтенда на Vercel
 const io = new Server(server, {
   cors: {
-    origin: "http://localhost:3000",
-    methods: ["GET", "POST"]
+    origin: ["http://localhost:3000", "https://online-library-ou77tx9f0-asds-projects-b70223b8.vercel.app"],
+    methods: ["GET", "POST"],
+    credentials: true
   }
 });
 
-app.use(cors());
+// ТУТ ИЗМЕНЕНИЕ: Разрешаем обычным HTTP запросам (fetch) работать с Vercel
+app.use(cors({
+  origin: ["http://localhost:3000", "https://online-library-ou77tx9f0-asds-projects-b70223b8.vercel.app"],
+  credentials: true
+}));
+
 app.use(express.json());
 
 // Робимо папку uploads публічною
@@ -401,5 +411,5 @@ app.post('/cart', async (req, res) => {
 });
 
 server.listen(PORT, () => {
-  console.log(`Server running on port ${PORT} with WebSockets enabled`);
+  console.log(`Server running on port ${PORT}`);
 });
