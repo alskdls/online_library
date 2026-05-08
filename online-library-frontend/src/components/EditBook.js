@@ -13,10 +13,10 @@ const EditBook = () => {
 
   useEffect(() => {
     // 1. Завантажуємо жанри
-    fetch('http://localhost:5000/genres').then(res => res.json()).then(data => setGenres(data));
+    fetch('https://library-backend-0q6b.onrender.com/genres').then(res => res.json()).then(data => setGenres(data));
     
     // 2. Завантажуємо дані поточної книги
-    fetch(`http://localhost:5000/books`).then(res => res.json()).then(data => {
+    fetch(`https://library-backend-0q6b.onrender.com/books`).then(res => res.json()).then(data => {
       const bookToEdit = data.find(b => b.id === parseInt(id));
       if (bookToEdit) setFormData(bookToEdit);
     });
@@ -28,7 +28,7 @@ const EditBook = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const response = await fetch(`http://localhost:5000/books/${id}`, {
+    const response = await fetch(`https://library-backend-0q6b.onrender.com/books/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ...formData, userRole: user?.role })
