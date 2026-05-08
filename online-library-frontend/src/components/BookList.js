@@ -13,13 +13,13 @@ const BookList = ({ selectedGenre, searchQuery, extraFilters }) => {
   const urlGenreId = queryParams.get('genre');
 
   useEffect(() => {
-    fetch('http://localhost:5000/books')
+    fetch('https://library-backend-0q6b.onrender.com/books')
       .then(res => res.json())
       .then(data => setBooks(data))
       .catch(err => console.error(err));
 
     if (user) {
-      fetch(`http://localhost:5000/favorites/${user.id}`)
+      fetch(`https://library-backend-0q6b.onrender.com/favorites/${user.id}`)
         .then(res => res.json())
         .then(data => setFavorites(data))
         .catch(err => console.error(err));

@@ -22,7 +22,7 @@ const Profile = ({ socket }) => {
       const targetId = id || currentUser?.id;
       if (!targetId) { setLoading(false); return; }
       try {
-        const response = await fetch(`http://localhost:5000/users/${targetId}`);
+        const response = await fetch(`https://library-backend-0q6b.onrender.com/users/${targetId}`);
         if (response.ok) {
           const data = await response.json();
           setProfileData(data);

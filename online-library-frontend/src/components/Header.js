@@ -14,8 +14,8 @@ const Header = ({ onSearch, onApplyFilters, socket }) => { // Додано socke
     const savedUser = JSON.parse(localStorage.getItem('user'));
     setUser(savedUser);
 
-    fetch('http://localhost:5000/genres').then(res => res.json()).then(data => setGenres(data));
-    fetch('http://localhost:5000/books').then(res => res.json()).then(data => {
+    fetch('https://library-backend-0q6b.onrender.com/genres').then(res => res.json()).then(data => setGenres(data));
+    fetch('https://library-backend-0q6b.onrender.com/books').then(res => res.json()).then(data => {
       const uniqueAuthors = [...new Set(data.map(b => b.author))].sort();
       setAuthors(uniqueAuthors);
     });

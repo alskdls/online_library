@@ -14,7 +14,7 @@ const AddBook = () => {
   const [genres, setGenres] = useState([]);
 
   useEffect(() => {
-    axios.get('http://localhost:5000/genres')
+    axios.get('https://library-backend-0q6b.onrender.com/genres')
       .then(res => setGenres(res.data))
       .catch(err => console.error(err));
   }, []);
@@ -39,7 +39,7 @@ const AddBook = () => {
     }
 
     try {
-      await axios.post('http://localhost:5000/books', formData, {
+      await axios.post('https://library-backend-0q6b.onrender.com/books', formData, {
         headers: {
           'Content-Type': 'multipart/form-data' // Важливо для завантаження файлів
         }

@@ -34,14 +34,14 @@ const BookDetail = () => {
 
   const fetchData = async () => {
     try {
-      const booksRes = await axios.get(`http://localhost:5000/books`);
+      const booksRes = await axios.get(`https://library-backend-0q6b.onrender.com/books`);
       const foundBook = booksRes.data.find(b => b.id === parseInt(id));
       setBook(foundBook);
 
-      const ratingRes = await axios.get(`http://localhost:5000/books/${id}/rating`);
+      const ratingRes = await axios.get(`https://library-backend-0q6b.onrender.com/books/${id}/rating`);
       setRatingData(ratingRes.data);
 
-      const reviewsRes = await axios.get(`http://localhost:5000/books/${id}/reviews`);
+      const reviewsRes = await axios.get(`https://library-backend-0q6b.onrender.com/books/${id}/reviews`);
       setAllReviews(reviewsRes.data);
 
       if (user) {
@@ -52,11 +52,11 @@ const BookDetail = () => {
           setHasVoted(true);
         }
         // Избранное
-        const favRes = await axios.get(`http://localhost:5000/favorites/${user.id}`);
+        const favRes = await axios.get(`https://library-backend-0q6b.onrender.com/favorites/${user.id}`);
         setIsFavorite(favRes.data.includes(parseInt(id)));
 
         // --- НОВОЕ: Получаем текущий статус книги (читаю/планирую и т.д.) ---
-        const statusRes = await axios.get(`http://localhost:5000/user-books/${user.id}/${id}`);
+        const statusRes = await axios.get(`https://library-backend-0q6b.onrender.com/user-books/${user.id}/${id}`);
         if (statusRes.data) {
           setCurrentStatus(statusRes.data.status);
         }
@@ -79,7 +79,7 @@ const BookDetail = () => {
   const handleStatusChange = async (newStatus) => {
     if (!user) return alert("Увійдіть в акаунт!");
     try {
-      await axios.post(`http://localhost:5000/user-books`, {
+      await axios.post(`https://library-backend-0q6b.onrender.com/user-books`, {
         userId: user.id,
         bookId: id,
         status: newStatus
@@ -94,7 +94,7 @@ const BookDetail = () => {
     if (!user) return alert("Увійдіть, щоб поставити оцінку!");
     if (hasVoted) return; 
     try {
-      await axios.post('http://localhost:5000/reviews', {
+      await axios.post('https://library-backend-0q6b.onrender.com/reviews', {
         userId: user.id, bookId: id, rating: val, comment: null 
       });
       setUserRating(val);
@@ -107,7 +107,7 @@ const BookDetail = () => {
     if (!userRating) return;
     if (!comment.trim()) return alert("Напишіть текст відгуку!");
     try {
-      await axios.post('http://localhost:5000/reviews', {
+      await axios.post('https://library-backend-0q6b.onrender.com/reviews', {
         userId: user.id, bookId: id, rating: userRating, comment: comment.trim(), parent_id: replyTo
       });
       setComment(""); setReplyTo(null); fetchData(); 
@@ -123,9 +123,9 @@ const BookDetail = () => {
     if (!user) return alert("Будь ласка, увійдіть!");
     try {
       if (isFavorite) {
-        await axios.delete('http://localhost:5000/favorites', { data: { userId: user.id, bookId: book.id } });
+        await axios.delete('https://library-backend-0q6b.onrender.com/favorites', { data: { userId: user.id, bookId: book.id } });
       } else {
-        await axios.post('http://localhost:5000/favorites', { userId: user.id, bookId: book.id });
+        await axios.post('https://library-backend-0q6b.onrender.com/favorites', { userId: user.id, bookId: book.id });
       }
       setIsFavorite(!isFavorite);
     } catch (err) { console.error("Помилка з обраним:", err); }
@@ -134,7 +134,7 @@ const BookDetail = () => {
   const handleReaction = async (commentId, type) => {
     if (!user) return alert("Увійдіть, щоб ставити реакції!");
     try {
-      await axios.post(`http://localhost:5000/comments/${commentId}/reaction`, { userId: user.id, type: type });
+      await axios.post(`https://library-backend-0q6b.onrender.com/comments/${commentId}/reaction`, { userId: user.id, type: type });
       fetchData(); 
     } catch (err) { console.error(err); }
   };
@@ -285,7 +285,7 @@ const BookDetail = () => {
                         </div>
                         <div style={{ flex: 1, overflow: 'hidden' }}>
                           <Viewer 
-                            fileUrl={`http://localhost:5000${book.content}`}
+                            fileUrl={`https://library-backend-0q6b.onrender.com${book.content}`}
                             plugins={[toolbarPluginInstance]}
                           />
                         </div>

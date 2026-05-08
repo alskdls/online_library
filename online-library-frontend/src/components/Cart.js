@@ -8,7 +8,7 @@ const Cart = () => {
 
   const fetchCart = () => {
     if (!user) return;
-    fetch(`http://localhost:5000/cart-details/${user.id}`)
+    fetch(`https://library-backend-0q6b.onrender.com/cart-details/${user.id}`)
       .then(res => res.json())
       .then(data => {
         setCartItems(data);
@@ -26,7 +26,7 @@ const Cart = () => {
 
   const updateQuantity = async (bookId, action) => {
     try {
-      await fetch('http://localhost:5000/cart/quantity', {
+      await fetch('https://library-backend-0q6b.onrender.com/cart/quantity', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId: user.id, bookId, action })
@@ -45,7 +45,7 @@ const Cart = () => {
 
   const removeItem = async (bookId) => {
     try {
-      await fetch('http://localhost:5000/cart', {
+      await fetch('https://library-backend-0q6b.onrender.com/cart', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId: user.id, bookId })

@@ -8,7 +8,7 @@ const Favorites = () => {
 
   useEffect(() => {
     if (user) {
-      fetch(`http://localhost:5000/favorites-details/${user.id}`)
+      fetch(`https://library-backend-0q6b.onrender.com/favorites-details/${user.id}`)
         .then(res => res.json())
         .then(data => {
           setFavoriteBooks(data);

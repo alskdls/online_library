@@ -2,6 +2,7 @@ import './App.css';
 import React, { useState, useEffect } from 'react'; // Додано useEffect
 import { Routes, Route } from 'react-router-dom';
 import io from 'socket.io-client'; // Додано імпорт сокетів
+import { API_URL } from './config';
 
 import Header from './components/Header';
 import Footer from './components/Footer';
@@ -18,7 +19,7 @@ import BookDetail from './components/BookDetail';
 import Profile from './components/Profile';
 
 // Ініціалізуємо сокет за межами компонента, щоб він не створювався заново при рендері
-const socket = io('http://localhost:5000');
+const socket = io('https://library-backend-0q6b.onrender.com');
 
 function App() {
   const [selectedGenreId, setSelectedGenreId] = useState(null);
