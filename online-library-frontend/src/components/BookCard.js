@@ -16,7 +16,7 @@ const BookCard = ({ book, isFavoriteInitial = false }) => {
   }, [isFavoriteInitial]);
 
   useEffect(() => {
-    axios.get(`https://library-backend-0q6b.onrender.com/books/${book.id}/rating`)
+    axios.get(`http://localhost:5000/books/${book.id}/rating`)
       .then(res => setRatingData(res.data))
       .catch(err => console.error(err));
   }, [book.id]);
@@ -32,7 +32,7 @@ const BookCard = ({ book, isFavoriteInitial = false }) => {
     const method = isFavorite ? 'DELETE' : 'POST';
     
     try {
-      const response = await fetch('https://library-backend-0q6b.onrender.com/favorites', {
+      const response = await fetch('http://localhost:5000/favorites', {
         method, 
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId: user.id, bookId: book.id })
@@ -50,7 +50,7 @@ const BookCard = ({ book, isFavoriteInitial = false }) => {
     e.stopPropagation();
     if (!window.confirm("Видалити цю книгу?")) return;
     try {
-      const response = await fetch(`https://library-backend-0q6b.onrender.com/books/${id}`, {
+      const response = await fetch(`http://localhost:5000/books/${id}`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userRole: user?.role })

@@ -12,8 +12,8 @@ const Home = ({ searchQuery, extraFilters }) => {
   useEffect(() => {
     // 1. Завантажуємо книги та жанри
     Promise.all([
-      fetch('https://library-backend-0q6b.onrender.com/books').then(res => res.json()),
-      fetch('https://library-backend-0q6b.onrender.com/genres').then(res => res.json())
+      fetch('http://localhost:5000/books').then(res => res.json()),
+      fetch('http://localhost:5000/genres').then(res => res.json())
     ])
     .then(([booksData, genresData]) => {
       setBooks(booksData);
@@ -23,7 +23,7 @@ const Home = ({ searchQuery, extraFilters }) => {
 
     // 2. Завантажуємо обране (якщо юзер авторизований)
     if (user && user.id) {
-      fetch(`https://library-backend-0q6b.onrender.com/favorites/${user.id}`)
+      fetch(`http://localhost:5000/favorites/${user.id}`)
         .then(res => res.json())
         .then(data => {
           // Сервер тепер шле масив чисел [1, 7, 12], тому просто зберігаємо його

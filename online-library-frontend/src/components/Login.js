@@ -9,7 +9,7 @@ const Login = ({ socket }) => { // Приймаємо socket як пропс
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch('https://library-backend-0q6b.onrender.com/auth/login', {
+      const response = await fetch('http://localhost:5000/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })

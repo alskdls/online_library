@@ -7,28 +7,18 @@ const { Server } = require('socket.io');
 const app = express();
 const pool = require('./db'); 
 const bcrypt = require('bcryptjs');
-
-// Render сам назначает порт через переменную среды, поэтому используем её
-const PORT = process.env.PORT || 5000; 
+const PORT = 5000;
 
 // --- НАЛАШТУВАННЯ СЕРВЕРА ТА SOCKET.IO ---
 const server = http.createServer(app);
-
-// ТУТ ИЗМЕНЕНИЕ: Разрешаем сокетам принимать соединения от твоего фронтенда на Vercel
 const io = new Server(server, {
   cors: {
-    origin: ["http://localhost:3000", "https://online-library-ou77tx9f0-asds-projects-b70223b8.vercel.app"],
-    methods: ["GET", "POST"],
-    credentials: true
+    origin: "http://localhost:3000",
+    methods: ["GET", "POST"]
   }
 });
 
-// ТУТ ИЗМЕНЕНИЕ: Разрешаем обычным HTTP запросам (fetch) работать с Vercel
-app.use(cors({
-  origin: ["http://localhost:3000", "https://online-library-ou77tx9f0-asds-projects-b70223b8.vercel.app"],
-  credentials: true
-}));
-
+app.use(cors());
 app.use(express.json());
 
 // Робимо папку uploads публічною
@@ -80,6 +70,28 @@ io.on('connection', (socket) => {
   });
 });
 
+// Эндпоинт для получения книг, которые юзер лайкнул или дизлайкнул
+app.get('/users/:id/reactions', async (req, res) => {
+    const userId = req.params.id;
+    const { type } = req.query; // Ожидаем 'like' или 'dislike'
+
+    try {
+        // Джоиним (соединяем) реакции с книгами, чтобы получить названия и обложки
+        const result = await pool.query(
+            `SELECT b.id, b.title, b.author, b.image_url 
+             FROM books b
+             JOIN book_reactions br ON b.id = br.book_id
+             WHERE br.user_id = $1 AND br.type = $2`, 
+            [userId, type]
+        );
+
+        res.json(result.rows);
+    } catch (err) {
+        console.error("Ошибка при получении списка реакций:", err.message);
+        res.status(500).send("Ошибка сервера");
+    }
+});
+
 // --- КОРИСТУВАЧІ ТА ПРОФІЛІ ---
 
 app.get('/users/:id', async (req, res) => {
@@ -88,8 +100,8 @@ app.get('/users/:id', async (req, res) => {
     const user = await pool.query(
       `SELECT u.id, u.username, u.email, u.role, u.is_online, u.avatar_url,
         (SELECT COUNT(*) FROM user_books WHERE user_id = u.id AND status = 'completed') as completed_count,
-        (SELECT COUNT(*) FROM comment_likes WHERE user_id = u.id AND reaction_type = 'like') as total_likes,
-        (SELECT COUNT(*) FROM comment_likes WHERE user_id = u.id AND reaction_type = 'dislike') as total_dislikes,
+        (SELECT COUNT(*) FROM book_reactions WHERE user_id = u.id AND type = 'like') as total_likes,
+        (SELECT COUNT(*) FROM book_reactions WHERE user_id = u.id AND type = 'dislike') as total_dislikes,
         (SELECT COUNT(*) FROM reviews WHERE user_id = u.id) as reviews_count
         FROM users u WHERE u.id = $1`, 
       [id]
@@ -103,6 +115,59 @@ app.get('/users/:id', async (req, res) => {
     console.error('Помилка отримання юзера:', err.message);
     res.status(500).send('Помилка сервера');
   }
+});
+
+// 1. Обновление настроек
+app.put('/users/:id/settings', async (req, res) => {
+    const { id } = req.params;
+    const { username, email } = req.body;
+    try {
+        const result = await pool.query(
+            'UPDATE users SET username = $1, email = $2 WHERE id = $3 RETURNING id, username, email, avatar_url, role',
+            [username, email, id]
+        );
+        res.json({ message: "Дані оновлено", user: result.rows[0] });
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send("Помилка при оновленні профілю");
+    }
+});
+
+// 2. Смена пароля
+app.put('/users/:id/password', async (req, res) => {
+    const { id } = req.params;
+    const { oldPassword, newPassword } = req.body;
+    try {
+        const user = await pool.query('SELECT password FROM users WHERE id = $1', [id]);
+        const validPassword = await bcrypt.compare(oldPassword, user.rows[0].password);
+        if (!validPassword) return res.status(401).json("Старий пароль невірний");
+
+        const salt = await bcrypt.genSalt(10);
+        const hashed = await bcrypt.hash(newPassword, salt);
+        await pool.query('UPDATE users SET password = $1 WHERE id = $2', [hashed, id]);
+        res.json("Пароль змінено");
+    } catch (err) {
+        res.status(500).send("Помилка при зміні пароля");
+    }
+});
+
+// 3. Список отзывов для профиля
+app.get('/users/:id/reviews-list', async (req, res) => {
+    const userId = req.params.id;
+    try {
+        const result = await pool.query(
+            `SELECT r.id, r.comment as review_text, r.created_at, b.id as book_id, b.title, b.author, b.image_url 
+             FROM reviews r
+             JOIN books b ON r.book_id = b.id
+             WHERE r.user_id = $1
+             ORDER BY r.created_at DESC`, 
+            [userId]
+        );
+        res.json(result.rows);
+    } catch (err) {
+        console.error("Ошибка отзывов:", err.message);
+        res.status(500).send("Ошибка сервера");
+    }
 });
 
 app.post('/users/:id/avatar', upload.single('avatar'), async (req, res) => {
@@ -160,7 +225,10 @@ app.delete('/books/:id', async (req, res) => {
     const { id } = req.params;
     await pool.query('DELETE FROM books WHERE id = $1', [id]);
     res.json('Книга видалена');
-  } catch (err) { console.error(err.message); }
+  } catch (err) { 
+    console.error(err.message);
+    res.status(500).send("Ошибка удаления");
+  }
 });
 
 // --- АВТОРІЗАЦІЯ ---
@@ -332,7 +400,27 @@ app.get('/favorites-details/:userId', async (req, res) => {
 
 // --- СТАТУСИ ЧИТАННЯ ---
 
-// ПІДТРИМКА ШЛЯХУ З ПРОФІЛЮ (Додано для сумісності з Profile.js)
+app.get('/users/:userId/book-counts', async (req, res) => {
+    const { userId } = req.params;
+    try {
+        const result = await pool.query(
+            `SELECT status, COUNT(*) FROM user_books WHERE user_id = $1 GROUP BY status`,
+            [userId]
+        );
+        
+        // Превращаем массив строк в удобный объект { reading: 5, completed: 10, ... }
+        const counts = result.rows.reduce((acc, row) => {
+            acc[row.status] = parseInt(row.count);
+            return acc;
+        }, {});
+
+        res.json(counts);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send("Ошибка получения статистики");
+    }
+});
+
 app.post('/users/books/update-status', async (req, res) => {
     const { userId, bookId, status } = req.body;
     try {
@@ -350,7 +438,6 @@ app.post('/users/books/update-status', async (req, res) => {
     }
 });
 
-// Отримати книги користувача за статусом
 app.get('/users/:userId/books', async (req, res) => {
     const { userId } = req.params;
     const { status } = req.query;
@@ -369,7 +456,6 @@ app.get('/users/:userId/books', async (req, res) => {
     }
 });
 
-// Отримати статус конкретної книги для юзера
 app.get('/user-books/:userId/:bookId', async (req, res) => {
     const { userId, bookId } = req.params;
     try {
@@ -383,24 +469,6 @@ app.get('/user-books/:userId/:bookId', async (req, res) => {
     }
 });
 
-// Оригінальний маршрут (залишив для іншої логіки, якщо є)
-app.post('/user-books', async (req, res) => {
-    const { userId, bookId, status } = req.body;
-    try {
-        await pool.query(
-            `INSERT INTO user_books (user_id, book_id, status) 
-             VALUES ($1, $2, $3) 
-             ON CONFLICT (user_id, book_id) 
-             DO UPDATE SET status = EXCLUDED.status, updated_at = CURRENT_TIMESTAMP`,
-            [userId, bookId, status]
-        );
-        res.send("Статус успішно оновлено");
-    } catch (err) {
-        console.error(err.message);
-        res.status(500).send("Помилка сервера при збереженні статусу");
-    }
-});
-
 // --- КОШИК ---
 app.post('/cart', async (req, res) => {
   try {
@@ -410,6 +478,64 @@ app.post('/cart', async (req, res) => {
   } catch (err) { console.error(err.message); }
 });
 
+// --- НОВІ ЕНДПОЇНТИ ДЛЯ ЛАЙКІВ КНИГИ ---
+
+app.get('/books/:id/reactions', async (req, res) => {
+    const { id } = req.params;
+    try {
+        const likes = await pool.query('SELECT count(*) FROM book_reactions WHERE book_id = $1 AND type = $2', [id, 'like']);
+        const dislikes = await pool.query('SELECT count(*) FROM book_reactions WHERE book_id = $1 AND type = $2', [id, 'dislike']);
+        res.json({ 
+            likes: parseInt(likes.rows[0].count), 
+            dislikes: parseInt(dislikes.rows[0].count) 
+        });
+    } catch (err) { 
+        console.error(err);
+        res.status(500).json(err); 
+    }
+});
+
+app.post('/books/:id/reaction', async (req, res) => {
+    const { id } = req.params;
+    const { userId, type } = req.body;
+    try {
+        const existing = await pool.query("SELECT * FROM book_reactions WHERE book_id = $1 AND user_id = $2", [id, userId]);
+        
+        if (existing.rows.length > 0) {
+            if (existing.rows[0].type === type) {
+                await pool.query("DELETE FROM book_reactions WHERE book_id = $1 AND user_id = $2", [id, userId]);
+            } else {
+                await pool.query("UPDATE book_reactions SET type = $1 WHERE book_id = $2 AND user_id = $3", [type, id, userId]);
+            }
+        } else {
+            await pool.query("INSERT INTO book_reactions (book_id, user_id, type) VALUES ($1, $2, $3)", [id, userId, type]);
+        }
+        res.json({ success: true });
+    } catch (err) { 
+        console.error(err);
+        res.status(500).json(err); 
+    }
+});
+
+// Эндпоинт для получения списка всех отзывов пользователя с данными о книгах
+app.get('/users/:id/reviews-list', async (req, res) => {
+    const userId = req.params.id;
+    try {
+        const result = await pool.query(
+            `SELECT r.id, r.comment as review_text, r.created_at, b.id as book_id, b.title, b.author, b.image_url 
+             FROM reviews r
+             JOIN books b ON r.book_id = b.id
+             WHERE r.user_id = $1
+             ORDER BY r.created_at DESC`, 
+            [userId]
+        );
+        res.json(result.rows);
+    } catch (err) {
+        console.error("Ошибка при получении списка отзывов пользователя:", err.message);
+        res.status(500).send("Ошибка сервера");
+    }
+});
+
 server.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`Server running on port ${PORT} with WebSockets enabled`);
 });

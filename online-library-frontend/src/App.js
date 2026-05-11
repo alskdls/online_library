@@ -16,9 +16,10 @@ import Cart from './components/Cart';
 import EditBook from './components/EditBook';
 import BookDetail from './components/BookDetail';
 import Profile from './components/Profile';
+import Settings from './components/Settings'; 
 
 // Ініціалізуємо сокет за межами компонента, щоб він не створювався заново при рендері
-const socket = io('https://library-backend-0q6b.onrender.com');
+const socket = io('http://localhost:5000');
 
 function App() {
   const [selectedGenreId, setSelectedGenreId] = useState(null);
@@ -85,6 +86,7 @@ function App() {
               />
             } />
             {/* Передаємо сокет в Login, щоб відправити статус при вході */}
+            <Route path="/" element={<Home searchQuery={searchTerm} extraFilters={extraFilters} />} />
             <Route path="/login" element={<Login socket={socket} />} />
             <Route path="/register" element={<Register />} />
             <Route path="/add-book" element={<AddBook />} />
@@ -94,6 +96,7 @@ function App() {
             <Route path="/book/:id" element={<BookDetail />} />
             <Route path="/profile" element={<Profile socket={socket} />} />
             <Route path="/profile/:id" element={<Profile socket={socket} />} />
+            <Route path="/settings" element={<Settings />} />
           </Routes>
         </main>
       </div>
