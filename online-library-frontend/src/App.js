@@ -1,7 +1,7 @@
 import './App.css';
-import React, { useState, useEffect } from 'react'; // Додано useEffect
+import React, { useState, useEffect } from 'react';
 import { Routes, Route } from 'react-router-dom';
-import io from 'socket.io-client'; // Додано імпорт сокетів
+import io from 'socket.io-client';
 
 import Header from './components/Header';
 import Footer from './components/Footer';
@@ -18,66 +18,64 @@ import BookDetail from './components/BookDetail';
 import Profile from './components/Profile';
 import Settings from './components/Settings'; 
 
-// Ініціалізуємо сокет за межами компонента, щоб він не створювався заново при рендері
 const socket = io('http://localhost:5000');
 
 function App() {
   const [selectedGenreId, setSelectedGenreId] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [extraFilters, setExtraFilters] = useState(null);
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    return localStorage.getItem('theme') === 'dark';
+  });
 
   useEffect(() => {
-    // Перевіряємо, чи залогінений користувач
     const storedUser = localStorage.getItem('user');
     if (storedUser) {
       const user = JSON.parse(storedUser);
-      // Кажемо серверу, що ми онлайн
       socket.emit('user_online', user.id);
     }
 
-    // Очищення при закритті додатка (необов'язково, але корисно)
+    if (isDarkMode) {
+      document.body.classList.add('dark-theme');
+      localStorage.setItem('theme', 'dark');
+    } else {
+      document.body.classList.remove('dark-theme');
+      localStorage.setItem('theme', 'light');
+    }
+
     return () => {
       socket.off('status_changed');
     };
-  }, []);
+  }, [isDarkMode]);
 
   const toggleTheme = () => {
-    setIsDarkMode(!isDarkMode);
+    setIsDarkMode(prev => !prev);
   };
 
   return (
-    <div className={`App ${isDarkMode ? 'dark-theme' : ''}`} style={{ 
-      display: 'flex', 
-      flexDirection: 'column', 
-      minHeight: '100vh',
-      backgroundColor: 'var(--bg-color)',
-      color: 'var(--text-main)'
-    }}>
-      <Header onSearch={setSearchTerm} onApplyFilters={setExtraFilters} socket={socket} />
+    <div className={`App ${isDarkMode ? 'dark-theme' : ''}`} style={appStyle}>
+      <Header 
+        onSearch={setSearchTerm} 
+        onApplyFilters={setExtraFilters} 
+        socket={socket} 
+        onMenuClick={() => setIsSidebarOpen(true)} 
+      />
       
-      <div className="main-layout" style={{ 
-        display: 'flex', 
-        flex: 1,
-        alignItems: 'stretch',
-        gap: '0' 
-      }}>
+      <div className="main-layout" style={mainLayoutStyle}>
         <Sidebar 
           onSelectGenre={setSelectedGenreId} 
           onApplyFilters={setExtraFilters} 
           isDarkMode={isDarkMode} 
           toggleTheme={toggleTheme} 
+          isOpen={isSidebarOpen}
+          onClose={() => setIsSidebarOpen(false)}
         />
         
-        <main className="content-area" style={{ 
-          flex: 1, 
-          padding: '20px 20px 0 20px', 
-          backgroundColor: 'var(--bg-color)'
-        }}>
+        <main className="content-area" style={contentAreaStyle}>
           <Routes>
-            <Route path="/" element={
-              <Home searchQuery={searchTerm} extraFilters={extraFilters} />
-            } />
+            <Route path="/" element={<Home searchQuery={searchTerm} extraFilters={extraFilters} />} />
             <Route path="/search" element={
               <BookList 
                 selectedGenre={selectedGenreId} 
@@ -85,8 +83,6 @@ function App() {
                 extraFilters={extraFilters} 
               />
             } />
-            {/* Передаємо сокет в Login, щоб відправити статус при вході */}
-            <Route path="/" element={<Home searchQuery={searchTerm} extraFilters={extraFilters} />} />
             <Route path="/login" element={<Login socket={socket} />} />
             <Route path="/register" element={<Register />} />
             <Route path="/add-book" element={<AddBook />} />
@@ -102,8 +98,45 @@ function App() {
       </div>
       
       <Footer />
+
+      <style>
+        {`
+          @media (max-width: 768px) {
+            .main-layout {
+              flex-direction: column;
+            }
+            .content-area {
+              padding: 10px !important;
+              margin-left: 0 !important;
+            }
+          }
+        `}
+      </style>
     </div>
   );
 }
+
+const appStyle = { 
+  display: 'flex', 
+  flexDirection: 'column', 
+  minHeight: '100vh',
+  backgroundColor: 'var(--bg-color)',
+  color: 'var(--text-main)'
+};
+
+const mainLayoutStyle = { 
+  display: 'flex', 
+  flex: 1,
+  alignItems: 'stretch',
+  gap: '0',
+  position: 'relative'
+};
+
+const contentAreaStyle = { 
+  flex: 1, 
+  padding: '20px 20px 0 20px', 
+  backgroundColor: 'var(--bg-color)',
+  minWidth: 0 
+};
 
 export default App;

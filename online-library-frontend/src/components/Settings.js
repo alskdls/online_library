@@ -5,7 +5,6 @@ const Settings = () => {
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
   
-  // Берем актуального пользователя
   const [currentUser, setCurrentUser] = useState(JSON.parse(localStorage.getItem('user')));
   
   const [formData, setFormData] = useState({
@@ -21,7 +20,6 @@ const Settings = () => {
   const [avatarHover, setAvatarHover] = useState(false);
   const [msg, setMsg] = useState({ text: '', type: '' });
 
-  // Иконка Edit из твоего профиля
   const EditIcon = () => (
     <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
@@ -30,9 +28,9 @@ const Settings = () => {
   );
 
   useEffect(() => {
-    const hasChanges = formData.username !== currentUser?.username || formData.email !== currentUser?.email;
+    const hasChanges = formData.username !== currentUser?.username;
     setIsChanged(hasChanges);
-  }, [formData.username, formData.email, currentUser]);
+  }, [formData.username, currentUser]);
 
   const handleAvatarChange = async (e) => {
     const file = e.target.files[0];
@@ -49,13 +47,10 @@ const Settings = () => {
         const result = await res.json();
         const newUrl = `http://localhost:5000${result.avatar_url}`;
         setAvatar(newUrl);
-        
-        // КРИТИЧНО ДЛЯ СИНХРОНИЗАЦИИ: обновляем localStorage и локальный стейт
         const updatedUser = { ...currentUser, avatar_url: result.avatar_url };
         localStorage.setItem('user', JSON.stringify(updatedUser));
         window.dispatchEvent(new Event('userUpdate'));
         setCurrentUser(updatedUser);
-        
         setMsg({ text: 'Фото профілю оновлено', type: 'success' });
       }
     } catch (err) { setMsg({ text: 'Помилка завантаження', type: 'error' }); }
@@ -64,7 +59,6 @@ const Settings = () => {
   const handleUpdateInfo = async (e) => {
     e.preventDefault();
     if (!isChanged) return;
-
     try {
       const res = await fetch(`http://localhost:5000/users/${currentUser.id}/settings`, {
         method: 'PUT',
@@ -91,14 +85,12 @@ const Settings = () => {
       setMsg({ text: 'Паролі не збігаються', type: 'error' });
       return;
     }
-
     try {
       const res = await fetch(`http://localhost:5000/users/${currentUser.id}/password`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ oldPassword: formData.oldPassword, newPassword: formData.newPassword })
       });
-      const data = await res.json();
       if (res.ok) {
         setMsg({ text: 'Пароль успішно змінено', type: 'success' });
         setFormData({ ...formData, oldPassword: '', newPassword: '', confirmPassword: '' });
@@ -106,6 +98,14 @@ const Settings = () => {
         setMsg({ text: 'Поточний пароль вказано невірно', type: 'error' });
       }
     } catch (err) { setMsg({ text: 'Помилка сервера', type: 'error' }); }
+  };
+
+  // Динамические стили для алертов
+  const alertStyle = {
+    ...alert,
+    backgroundColor: msg.type === 'success' ? 'var(--card-bg)' : 'rgba(255, 0, 0, 0.1)',
+    color: msg.type === 'success' ? '#27ae60' : '#e74c3c',
+    border: `1px solid ${msg.type === 'success' ? '#27ae60' : '#e74c3c'}`
   };
 
   return (
@@ -117,14 +117,13 @@ const Settings = () => {
         </div>
 
         {msg.text && (
-          <div style={{ ...alert, backgroundColor: msg.type === 'success' ? '#edf7ed' : '#fdeded', color: msg.type === 'success' ? '#1e4620' : '#5f2120' }}>
+          <div style={alertStyle}>
             {msg.text}
           </div>
         )}
 
         <div style={verticalStack}>
           
-          {/* БЛОК АВАТАРА — КОПИЯ ЛОГИКИ ИЗ PROFILE.JS */}
           <div style={wideCard}>
             <h3 style={cardTitle}>Фото профілю</h3>
             <div style={avatarRow}>
@@ -144,7 +143,6 @@ const Settings = () => {
                   <div style={avatarPlaceholder}>{currentUser?.username?.charAt(0).toUpperCase()}</div>
                 )}
                 
-                {/* Твой родной оверлей из профиля */}
                 {avatarHover && (
                   <div style={uploadOverlayStyle}>
                     <EditIcon />
@@ -168,7 +166,6 @@ const Settings = () => {
             </div>
           </div>
 
-          {/* БЛОК ОСОБИСТИХ ДАНИХ */}
           <form style={wideCard} onSubmit={handleUpdateInfo}>
             <h3 style={cardTitle}>Особиста інформація</h3>
             <div style={inputField}>
@@ -182,10 +179,11 @@ const Settings = () => {
             <div style={inputField}>
               <label style={label}>Електронна пошта</label>
               <input 
-                style={input} 
+                style={disabledInput} 
                 type="email" 
                 value={formData.email} 
-                onChange={e => setFormData({...formData, email: e.target.value})} 
+                readOnly 
+                title="Зміна пошти недоступна"
               />
             </div>
             <button 
@@ -197,7 +195,6 @@ const Settings = () => {
             </button>
           </form>
 
-          {/* БЛОК ПАРОЛЯ */}
           <form style={wideCard} onSubmit={handleChangePassword}>
             <h3 style={cardTitle}>Безпека та пароль</h3>
             <div style={inputField}>
@@ -241,46 +238,37 @@ const Settings = () => {
   );
 };
 
-// --- СТИЛИ (ГАРМОНИЯ С ПРОФИЛЕМ) ---
-const pageWrapper = { backgroundColor: '#fcfaf9', minHeight: '100vh', padding: '40px 20px' };
+// --- СТИЛИ С ПОДДЕРЖКОЙ ТЕМЫ ---
+const pageWrapper = { backgroundColor: 'var(--bg-color)', minHeight: '100vh', padding: '40px 20px', transition: 'background-color 0.3s' };
 const container = { maxWidth: '750px', margin: '0 auto' };
 const headerRow = { display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '30px' };
-const mainTitle = { fontSize: '26px', color: '#2c1e1a', fontWeight: 'bold', margin: 0 };
-const backBtn = { background: '#fff', border: '1px solid #eee', padding: '10px 20px', borderRadius: '10px', cursor: 'pointer', color: '#8d6e63', fontWeight: 'bold', boxShadow: '0 2px 5px rgba(0,0,0,0.05)' };
-
+const mainTitle = { fontSize: '26px', color: 'var(--text-main)', fontWeight: 'bold', margin: 0 };
+const backBtn = { background: 'var(--card-bg)', border: '1px solid var(--border-color)', padding: '10px 20px', borderRadius: '10px', cursor: 'pointer', color: 'var(--accent)', fontWeight: 'bold', boxShadow: '0 2px 5px rgba(0,0,0,0.05)' };
 const verticalStack = { display: 'flex', flexDirection: 'column', gap: '25px' };
-const wideCard = { backgroundColor: '#fff', padding: '35px', borderRadius: '20px', boxShadow: '0 10px 30px rgba(0,0,0,0.05)', border: '1px solid #f0f0f0' };
-const cardTitle = { fontSize: '18px', color: '#2c1e1a', marginBottom: '25px', fontWeight: 'bold', borderBottom: '2px solid #fcfaf9', paddingBottom: '10px' };
-
+const wideCard = { backgroundColor: 'var(--card-bg)', padding: '35px', borderRadius: '20px', boxShadow: '0 10px 30px rgba(0,0,0,0.05)', border: '1px solid var(--border-color)', transition: 'all 0.3s ease' };
+const cardTitle = { fontSize: '18px', color: 'var(--text-main)', marginBottom: '25px', fontWeight: 'bold', borderBottom: '2px solid var(--bg-color)', paddingBottom: '10px' };
 const inputField = { marginBottom: '20px' };
 const gridRow = { display: 'flex', gap: '20px', marginBottom: '20px' };
-const label = { display: 'block', fontSize: '12px', color: '#8d6e63', marginBottom: '8px', fontWeight: 'bold', textTransform: 'uppercase' };
-const input = { width: '100%', padding: '14px 16px', borderRadius: '12px', border: '1px solid #f0f0f0', outline: 'none', fontSize: '15px', boxSizing: 'border-box', backgroundColor: '#fafafa' };
-
-const saveBtn = { padding: '14px 35px', backgroundColor: '#8d6e63', color: '#fff', border: 'none', borderRadius: '12px', fontWeight: 'bold', fontSize: '15px', transition: '0.3s' };
-const passBtn = { ...saveBtn, backgroundColor: '#4b3832' };
-
-// СТИЛИ АВАТАРА ИЗ ТВОЕГО ПРОФИЛЯ
+const label = { display: 'block', fontSize: '12px', color: 'var(--text-muted)', marginBottom: '8px', fontWeight: 'bold', textTransform: 'uppercase' };
+const input = { width: '100%', padding: '14px 16px', borderRadius: '12px', border: '1px solid var(--border-color)', outline: 'none', fontSize: '15px', boxSizing: 'border-box', backgroundColor: 'var(--bg-color)', color: 'var(--text-main)' };
+const saveBtn = { padding: '14px 35px', backgroundColor: 'var(--accent)', color: '#fff', border: 'none', borderRadius: '12px', fontWeight: 'bold', fontSize: '15px', transition: '0.3s' };
+const passBtn = { ...saveBtn, backgroundColor: 'var(--text-main)', color: 'var(--card-bg)' };
 const avatarRow = { display: 'flex', alignItems: 'center', gap: '30px' };
-const avatarContainerStyle = { 
-  width: '130px', 
-  height: '130px', 
-  borderRadius: '20px', 
-  backgroundColor: '#333', 
-  border: '6px solid #fff', 
-  boxShadow: '0 5px 15px rgba(0,0,0,0.1)', 
-  position: 'relative', 
-  overflow: 'hidden',
-  cursor: 'pointer'
-};
+const avatarContainerStyle = { width: '130px', height: '130px', borderRadius: '20px', backgroundColor: 'var(--bg-color)', border: '6px solid var(--card-bg)', boxShadow: '0 5px 15px rgba(0,0,0,0.1)', position: 'relative', overflow: 'hidden', cursor: 'pointer' };
 const squareImg = { width: '100%', height: '100%', objectFit: 'cover', borderRadius: '14px', transition: '0.3s ease' };
-const avatarPlaceholder = { fontSize: '50px', color: '#8d6e63', fontWeight: 'bold', display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' };
+const avatarPlaceholder = { fontSize: '50px', color: 'var(--accent)', fontWeight: 'bold', display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' };
 const uploadOverlayStyle = { position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(0,0,0,0.4)', display: 'flex', justifyContent: 'center', alignItems: 'center', pointerEvents: 'none' };
-
 const avatarInfo = { display: 'flex', flexDirection: 'column', gap: '8px' };
-const uploadLinkBtn = { background: 'none', border: 'none', color: '#8d6e63', fontWeight: 'bold', cursor: 'pointer', fontSize: '16px', textDecoration: 'underline', padding: 0, textAlign: 'left' };
-const subText = { fontSize: '13px', color: '#bcaaa4', lineHeight: '1.4' };
-
+const uploadLinkBtn = { background: 'none', border: 'none', color: 'var(--accent)', fontWeight: 'bold', cursor: 'pointer', fontSize: '16px', textDecoration: 'underline', padding: 0, textAlign: 'left' };
+const subText = { fontSize: '13px', color: 'var(--text-muted)', lineHeight: '1.4' };
 const alert = { padding: '15px 20px', borderRadius: '12px', marginBottom: '25px', textAlign: 'center', fontSize: '14px', fontWeight: 'bold' };
+
+const disabledInput = { 
+  ...input, 
+  backgroundColor: 'var(--bg-color)', 
+  color: 'var(--text-muted)', 
+  cursor: 'not-allowed', 
+  opacity: 0.6
+};
 
 export default Settings;

@@ -10,7 +10,6 @@ const BookCard = ({ book, isFavoriteInitial = false }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [ratingData, setRatingData] = useState({ average_rating: 0, total_votes: 0 });
 
-  // СИНХРОНІЗАЦІЯ: оновлюємо внутрішній стан, якщо змінився пропс зверху
   useEffect(() => {
     setIsFavorite(isFavoriteInitial);
   }, [isFavoriteInitial]);
@@ -25,25 +24,18 @@ const BookCard = ({ book, isFavoriteInitial = false }) => {
     ? book.image_url 
     : "https://kappa.lol/pAubra"; 
 
- const handleFavoriteClick = async (e) => {
+  const handleFavoriteClick = async (e) => {
     e.stopPropagation();
     if (!user) { alert("Увійдіть!"); return; }
-    
     const method = isFavorite ? 'DELETE' : 'POST';
-    
     try {
       const response = await fetch('http://localhost:5000/favorites', {
         method, 
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId: user.id, bookId: book.id })
       });
-      
-      if (response.ok) {
-        setIsFavorite(!isFavorite); // Перемикаємо колір миттєво
-      }
-    } catch (err) { 
-      console.error("Помилка зірочки:", err); 
-    }
+      if (response.ok) setIsFavorite(!isFavorite);
+    } catch (err) { console.error("Помилка зірочки:", err); }
   };
 
   const handleDelete = async (e, id) => {
@@ -66,7 +58,7 @@ const BookCard = ({ book, isFavoriteInitial = false }) => {
           {user && (
             <button 
               onClick={handleFavoriteClick} 
-              style={iconBtnStyle(isFavorite ? '#f1c40f' : '#ccc')}
+              style={iconBtnStyle(isFavorite ? '#f1c40f' : 'var(--text-muted)')}
             >
               <svg width="22" height="22" viewBox="0 0 24 24" fill={isFavorite ? "#f1c40f" : "none"} stroke={isFavorite ? "#f1c40f" : "currentColor"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
@@ -102,7 +94,7 @@ const BookCard = ({ book, isFavoriteInitial = false }) => {
           <div style={ratingRowStyle}>
             <span style={{color: '#f1c40f', display: 'flex', gap: '2px'}}>
               {Array.from({ length: 5 }, (_, i) => (
-                <svg key={i} width="14" height="14" viewBox="0 0 24 24" fill={i < Math.round(ratingData.average_rating) ? "#f1c40f" : "none"} stroke={i < Math.round(ratingData.average_rating) ? "#f1c40f" : "#ccc"} strokeWidth="2">
+                <svg key={i} width="14" height="14" viewBox="0 0 24 24" fill={i < Math.round(ratingData.average_rating) ? "#f1c40f" : "none"} stroke={i < Math.round(ratingData.average_rating) ? "#f1c40f" : "var(--border-color)"} strokeWidth="2">
                   <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
                 </svg>
               ))}
@@ -123,17 +115,56 @@ const BookCard = ({ book, isFavoriteInitial = false }) => {
   );
 };
 
-// --- Стилі без змін ---
-const cardStyle = { width: '210px', background: 'var(--card-bg)', borderRadius: '12px', padding: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', display: 'flex', flexDirection: 'column', border: '1px solid var(--border-color)', transition: 'all 0.3s ease', cursor: 'pointer' };
+const cardStyle = { 
+  width: '210px', 
+  background: 'var(--card-bg)', 
+  borderRadius: '12px', 
+  padding: '12px', 
+  boxShadow: '0 4px 12px rgba(0,0,0,0.1)', 
+  display: 'flex', 
+  flexDirection: 'column', 
+  border: '1px solid var(--border-color)', 
+  transition: 'all 0.3s ease', 
+  cursor: 'pointer' 
+};
+
 const topRowStyle = { display: 'flex', justifyContent: 'space-between', marginBottom: '8px', alignItems: 'center', height: '24px' };
 const iconBtnStyle = (color) => ({ background: 'none', border: 'none', cursor: 'pointer', color: color, padding: '4px', display: 'flex', alignItems: 'center' });
 const imageBoxStyle = { width: '100%', height: '280px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'transparent', borderRadius: '4px', overflow: 'hidden' };
 const imgStyle = { maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', borderRadius: '2px' };
 const contentStyle = { marginTop: '10px', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', textAlign: 'left', gap: '2px' };
-const titleStyle = { fontSize: '16px', fontWeight: '700', color: 'var(--text-main)', margin: '0 0 2px 0', lineHeight: '1.2', width: '100%', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' };
+
+const titleStyle = { 
+  fontSize: '16px', 
+  fontWeight: '700', 
+  color: 'var(--text-main)', 
+  margin: '0 0 2px 0', 
+  lineHeight: '1.2', 
+  width: '100%', 
+  whiteSpace: 'nowrap', 
+  overflow: 'hidden', 
+  textOverflow: 'ellipsis' 
+};
+
 const authorStyle = { fontSize: '13px', color: 'var(--text-muted)', margin: 0 };
 const ratingRowStyle = { fontSize: '13px', display: 'flex', alignItems: 'center', margin: '6px 0', justifyContent: 'flex-start', width: '100%' };
 const ratingNumStyle = { marginLeft: '8px', color: 'var(--text-muted)', fontWeight: '600' };
-const readBtnStyle = { marginTop: '8px', width: '100%', padding: '10px', backgroundColor: 'var(--accent)', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' };
+
+const readBtnStyle = { 
+  marginTop: '8px', 
+  width: '100%', 
+  padding: '10px', 
+  backgroundColor: 'var(--accent)', 
+  color: '#fff', 
+  border: 'none', 
+  borderRadius: '8px', 
+  fontWeight: 'bold', 
+  fontSize: '14px', 
+  cursor: 'pointer', 
+  display: 'flex', 
+  alignItems: 'center', 
+  justifyContent: 'center',
+  transition: 'background-color 0.3s'
+};
 
 export default BookCard;

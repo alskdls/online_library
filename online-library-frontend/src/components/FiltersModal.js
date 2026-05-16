@@ -132,11 +132,9 @@ const FilterSection = ({ title, id, active, onToggle, children }) => {
   );
 };
 
-// --- ОНОВЛЕНІ СТИЛІ ---
-
 const overlayStyle = { 
   position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, 
-  backgroundColor: 'rgba(0, 0, 0, 0.4)', // Трохи світліший оверлей
+  backgroundColor: 'rgba(0, 0, 0, 0.4)', 
   display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000 
 };
 
@@ -218,8 +216,8 @@ const styleTag = (
   <style>
     {`
       .reset-button:hover {
-        background-color: #fff5f5 !important;
-        border-color: #feb2b2 !important;
+        background-color: var(--bg-color) !important;
+        opacity: 0.8;
       }
       input[type="checkbox"] {
         accent-color: var(--accent);

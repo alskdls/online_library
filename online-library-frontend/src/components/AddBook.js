@@ -10,7 +10,7 @@ const AddBook = () => {
   const [imageUrl, setImageUrl] = useState('');
   const [year, setYear] = useState('');
   const [price, setPrice] = useState('');
-  const [bookFile, setBookFile] = useState(null); // Нове поле для файлу
+  const [bookFile, setBookFile] = useState(null);
   const [genres, setGenres] = useState([]);
 
   useEffect(() => {
@@ -21,8 +21,6 @@ const AddBook = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    // Створюємо FormData замість звичайного об'єкта
     const formData = new FormData();
     formData.append('title', title);
     formData.append('author', author);
@@ -35,26 +33,16 @@ const AddBook = () => {
     formData.append('userRole', 'admin');
     
     if (bookFile) {
-      formData.append('bookFile', bookFile); // Ключ має збігатися з тим, що в multer: upload.single('bookFile')
+      formData.append('bookFile', bookFile);
     }
 
     try {
       await axios.post('http://localhost:5000/books', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data' // Важливо для завантаження файлів
-        }
+        headers: { 'Content-Type': 'multipart/form-data' }
       });
       alert('Книгу успішно додано!');
-      
-      // Скидання всіх полів
-      setTitle('');
-      setAuthor('');
-      setGenreId('');
-      setPages('');
-      setDescription('');
-      setImageUrl('');
-      setYear('');
-      setPrice('');
+      setTitle(''); setAuthor(''); setGenreId(''); setPages('');
+      setDescription(''); setImageUrl(''); setYear(''); setPrice('');
       setBookFile(null);
     } catch (err) {
       console.error(err);
@@ -68,86 +56,60 @@ const AddBook = () => {
       <form onSubmit={handleSubmit} style={formStyle}>
         <div style={rowStyle}>
           <input 
-            style={inputStyle} 
-            type="text" 
-            placeholder="Назва книги" 
-            value={title} 
-            onChange={(e) => setTitle(e.target.value)} 
-            required 
+            style={inputStyle} type="text" placeholder="Назва книги" 
+            value={title} onChange={(e) => setTitle(e.target.value)} required 
           />
           <input 
-            style={inputStyle} 
-            type="text" 
-            placeholder="Автор" 
-            value={author} 
-            onChange={(e) => setAuthor(e.target.value)} 
-            required 
+            style={inputStyle} type="text" placeholder="Автор" 
+            value={author} onChange={(e) => setAuthor(e.target.value)} required 
           />
         </div>
 
         <div style={rowStyle}>
           <select 
-            style={inputStyle} 
-            value={genreId} 
-            onChange={(e) => setGenreId(e.target.value)} 
-            required
+            style={inputStyle} value={genreId} 
+            onChange={(e) => setGenreId(e.target.value)} required
           >
             <option value="">Оберіть жанр</option>
             {genres.map(g => (
-              <option key={g.id} value={g.id}>{g.name}</option>
+              <option key={g.id} value={g.id} style={{background: 'var(--card-bg)', color: 'var(--text-main)'}}>{g.name}</option>
             ))}
           </select>
           <input 
-            style={inputStyle} 
-            type="number" 
-            placeholder="Рік видання" 
-            value={year} 
-            onChange={(e) => setYear(e.target.value)} 
+            style={inputStyle} type="number" placeholder="Рік видання" 
+            value={year} onChange={(e) => setYear(e.target.value)} 
           />
         </div>
 
         <div style={rowStyle}>
           <input 
-            style={inputStyle} 
-            type="number" 
-            placeholder="Кількість сторінок" 
-            value={pages} 
-            onChange={(e) => setPages(e.target.value)} 
+            style={inputStyle} type="number" placeholder="Кількість сторінок" 
+            value={pages} onChange={(e) => setPages(e.target.value)} 
           />
           <input 
-            style={inputStyle} 
-            type="number" 
-            placeholder="Ціна" 
-            value={price} 
-            onChange={(e) => setPrice(e.target.value)} 
+            style={inputStyle} type="number" placeholder="Ціна" 
+            value={price} onChange={(e) => setPrice(e.target.value)} 
           />
         </div>
 
         <input 
-          style={inputStyle} 
-          type="text" 
-          placeholder="URL обкладинки" 
-          value={imageUrl} 
-          onChange={(e) => setImageUrl(e.target.value)} 
+          style={inputStyle} type="text" placeholder="URL обкладинки" 
+          value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} 
         />
 
         <textarea 
-          style={textAreaStyle} 
-          placeholder="Анотація (короткий опис)" 
-          value={description} 
-          onChange={(e) => setDescription(e.target.value)} 
-          required
+          style={textAreaStyle} placeholder="Анотація (короткий опис)" 
+          value={description} onChange={(e) => setDescription(e.target.value)} required
         />
 
-        {/* Новий блок для завантаження файлу замість текстового поля */}
-        <div style={{ marginTop: '10px', padding: '15px', border: '2px dashed #3498db', borderRadius: '8px', backgroundColor: '#f9f9f9' }}>
-          <label style={{ fontSize: '14px', color: '#2c3e50', marginBottom: '8px', display: 'block', fontWeight: 'bold' }}>
+        <div style={fileUploadStyle}>
+          <label style={fileLabelStyle}>
             Завантажити файл книги (PDF, EPUB):
           </label>
           <input 
-            type="file" 
-            accept=".pdf,.epub" 
+            type="file" accept=".pdf,.epub" 
             onChange={(e) => setBookFile(e.target.files[0])} 
+            style={{color: 'var(--text-main)'}}
           />
         </div>
 
@@ -157,12 +119,75 @@ const AddBook = () => {
   );
 };
 
-const containerStyle = { maxWidth: '800px', margin: '40px auto', padding: '20px', backgroundColor: '#fff', borderRadius: '12px', boxShadow: '0 4px 15px rgba(0,0,0,0.1)' };
-const headerStyle = { textAlign: 'center', color: '#2c3e50', marginBottom: '30px' };
+const containerStyle = { 
+  maxWidth: '800px', 
+  margin: '40px auto', 
+  padding: '30px', 
+  backgroundColor: 'var(--card-bg)', 
+  color: 'var(--text-main)',         
+  borderRadius: '12px', 
+  border: '1px solid var(--border-color)',
+  boxShadow: '0 4px 15px rgba(0,0,0,0.1)',
+  transition: '0.3s'
+};
+
+const headerStyle = { textAlign: 'center', marginBottom: '30px' };
 const formStyle = { display: 'flex', flexDirection: 'column', gap: '15px' };
 const rowStyle = { display: 'flex', gap: '15px' };
-const inputStyle = { flex: 1, padding: '12px', borderRadius: '6px', border: '1px solid #ddd', fontSize: '15px', outline: 'none' };
-const textAreaStyle = { width: '100%', padding: '12px', borderRadius: '6px', border: '1px solid #ddd', minHeight: '100px', fontSize: '15px', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box' };
-const submitBtnStyle = { backgroundColor: '#2ecc71', color: '#fff', border: 'none', padding: '15px', borderRadius: '6px', fontSize: '16px', fontWeight: 'bold', cursor: 'pointer', transition: '0.3s', marginTop: '10px' };
+
+const inputStyle = { 
+  flex: 1, 
+  padding: '12px', 
+  borderRadius: '8px', 
+  border: '1px solid var(--border-color)', 
+  backgroundColor: 'var(--bg-color)', 
+  color: 'var(--text-main)', 
+  fontSize: '15px', 
+  outline: 'none',
+  transition: '0.3s'
+};
+
+const textAreaStyle = { 
+  width: '100%', 
+  padding: '12px', 
+  borderRadius: '8px', 
+  border: '1px solid var(--border-color)', 
+  backgroundColor: 'var(--bg-color)', 
+  color: 'var(--text-main)', 
+  minHeight: '120px', 
+  fontSize: '15px', 
+  outline: 'none', 
+  fontFamily: 'inherit', 
+  boxSizing: 'border-box',
+  transition: '0.3s'
+};
+
+const fileUploadStyle = { 
+  marginTop: '10px', 
+  padding: '20px', 
+  border: '2px dashed var(--border-color)', 
+  borderRadius: '8px', 
+  backgroundColor: 'var(--bg-color)' 
+};
+
+const fileLabelStyle = { 
+  fontSize: '14px', 
+  color: 'var(--text-muted)', 
+  marginBottom: '8px', 
+  display: 'block', 
+  fontWeight: 'bold' 
+};
+
+const submitBtnStyle = { 
+  backgroundColor: 'var(--accent)', 
+  color: '#fff', 
+  border: 'none', 
+  padding: '15px', 
+  borderRadius: '8px', 
+  fontSize: '16px', 
+  fontWeight: 'bold', 
+  cursor: 'pointer', 
+  transition: '0.3s' 
+};
 
 export default AddBook;

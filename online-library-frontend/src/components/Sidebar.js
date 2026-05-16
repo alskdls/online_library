@@ -1,8 +1,8 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { LayoutGrid, Sparkles, Trophy, Shuffle, PlusCircle, User as UserIcon } from 'lucide-react';
+import { LayoutGrid, Sparkles, Trophy, Shuffle, PlusCircle, User as UserIcon, X } from 'lucide-react';
 
-const Sidebar = ({ onApplyFilters, isDarkMode, toggleTheme }) => {
+const Sidebar = ({ onApplyFilters, isDarkMode, toggleTheme, isOpen, onClose }) => {
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem('user'));
 
@@ -21,164 +21,178 @@ const Sidebar = ({ onApplyFilters, isDarkMode, toggleTheme }) => {
       filters.selectedYears = { from: (currentYear - 1).toString(), to: currentYear.toString() };
     }
     onApplyFilters(filters);
+    if (window.innerWidth <= 768) onClose();
+  };
+
+  const menuClick = (path) => {
+    navigate(path);
+    if (window.innerWidth <= 768) onClose();
   };
 
   return (
-    <aside style={sidebarContainerStyle}>
-      <style>
-        {`
-          .sidebar-item {
-            padding: 12px 15px;
-            border-radius: 12px;
-            cursor: pointer;
-            transition: background-color 0.3s ease, color 0.3s ease !important;
-            color: #d7ccc8;
-            font-size: 14px;
-            font-weight: 500;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            margin-bottom: 4px;
-          }
-          
-          .sidebar-item:hover {
-            background-color: #5d4037 !important;
-            color: #fff !important;
-          }
+    <>
+      <style>{`
+        .sidebar-overlay {
+          position: fixed;
+          top: 0; left: 0; right: 0; bottom: 0;
+          background: rgba(0,0,0,0.6);
+          backdrop-filter: blur(2px);
+          z-index: 1000;
+          opacity: ${isOpen ? 1 : 0};
+          visibility: ${isOpen ? 'visible' : 'hidden'};
+          transition: all 0.3s ease-in-out;
+        }
 
-          .user-profile-field-sidebar {
-            transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease !important;
-          }
-          
-          .user-profile-field-sidebar:hover {
-            background-color: #5d4037 !important; 
-            color: #fff !important;
-          }
+        .sidebar-aside {
+          position: sticky;
+          top: 0;
+          height: 100vh;
+          display: flex;
+          flex-direction: column;
+          transition: transform 0.3s ease-in-out !important;
+          border-right: 1px solid rgba(255, 255, 255, 0.05);
+        }
 
-          .user-profile-field-sidebar:hover span {
-            color: #fff !important;
-          }
+        /* Прячем мобильную шапку на десктопе */
+        .mobile-sidebar-header {
+          display: none; 
+        }
 
-          .theme-toggle-container {
-            display: flex;
-            align-items: center;
+        @media (max-width: 768px) {
+          .sidebar-aside {
+            position: fixed !important;
+            z-index: 1001;
+            transform: ${isOpen ? 'translateX(0)' : 'translateX(-100%)'} !important;
+          }
+          .mobile-sidebar-header { 
+            display: flex !important; 
             justify-content: space-between;
-            padding: 15px;
-            background: rgba(255, 255, 255, 0.03);
-            border-radius: 14px;
-            margin-bottom: 20px;
+            align-items: center;
+            color: #fff;
+            padding: 10px 5px;
+            margin-bottom: 15px;
           }
+        }
 
-          .switch {
-            position: relative;
-            display: inline-block;
-            width: 38px;
-            height: 20px;
-          }
-          .switch input { opacity: 0; width: 0; height: 0; }
-          .slider {
-            position: absolute;
-            cursor: pointer;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background-color: #4a3728;
-            transition: .4s;
-            border-radius: 20px;
-          }
-          .slider:before {
-            position: absolute;
-            content: "";
-            height: 14px; width: 14px;
-            left: 3px; bottom: 3px;
-            background-color: #fff;
-            transition: .4s;
-            border-radius: 50%;
-          }
-          input:checked + .slider { background-color: var(--accent); }
-          input:checked + .slider:before { transform: translateX(18px); }
+        .sidebar-scrollable-content {
+          flex: 1; 
+          overflow-y: auto;
+        }
+        .sidebar-scrollable-content::-webkit-scrollbar { width: 0; }
 
-          .action-btn {
-            transition: all 0.3s ease !important;
-          }
-          .action-btn:hover {
-            opacity: 0.9;
-          }
-        `}
-      </style>
+        .sidebar-item {
+          padding: 12px 15px;
+          border-radius: 12px;
+          cursor: pointer;
+          transition: all 0.3s ease !important;
+          color: #d7ccc8;
+          font-size: 14px;
+          font-weight: 500;
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          margin-bottom: 4px;
+        }
+        
+        .sidebar-item:hover {
+          background-color: #5d4037 !important;
+          color: #fff !important;
+        }
 
-      {/* ОСНОВНА НАВІГАЦІЯ */}
-      <div className="sidebar-item" onClick={() => navigate('/')}>
-        <LayoutGrid size={18} /> Головна
-      </div>
-      <div className="sidebar-item" onClick={() => handleQuickFilter('new')}>
-        <Sparkles size={18} /> Новинки
-      </div>
-      <div className="sidebar-item" onClick={() => handleQuickFilter('top')}>
-        <Trophy size={18} /> Топ книги
-      </div>
-      <div className="sidebar-item" onClick={() => navigate('/recommendations')}>
-        <Sparkles size={18} color="var(--accent)" /> Рекомендації
-      </div>
+        .action-btn { transition: all 0.3s ease !important; }
+        .action-btn:hover { opacity: 0.9; }
+      `}</style>
 
-      <div style={{ height: '30px' }}></div>
+      {/* Оверлей только для мобилок */}
+      <div className="sidebar-overlay" onClick={onClose} />
 
-      {/* ДОДАТКОВО */}
-      <div className="sidebar-item" onClick={() => alert('Шукаємо випадкову книгу...')}>
-        <Shuffle size={18} /> Рандомна книга
-      </div>
-
-      <div style={{ marginTop: 'auto' }}>
-        {/* ПЕРЕМИКАЧ ТЕМИ */}
-        <div className="theme-toggle-container">
-          <span style={{ fontSize: '13px', color: '#d7ccc8', fontWeight: '500' }}>Темна тема</span>
-          <label className="switch">
-            <input type="checkbox" checked={isDarkMode} onChange={toggleTheme} />
-            <span className="slider"></span>
-          </label>
+      <aside className="sidebar-aside" style={sidebarContainerStyle}>
+        
+        {/* Появится только на мобилках */}
+        <div className="mobile-sidebar-header">
+           <span style={{fontWeight: 'bold', fontSize: '14px'}}>МЕНЮ</span>
+           <X size={22} onClick={onClose} style={{ cursor: 'pointer' }} />
         </div>
-      </div>
 
-      {/* НИЖНІЙ БЛОК (АККАУНТ) */}
-      <div style={bottomSectionStyle}>
-        {user ? (
-          <>
-            <div 
-              className="user-profile-field-sidebar"
-              // ЗМІНЕНО: тепер веде на шлях з ID, як і в хедері
-              onClick={() => navigate(`/profile/${user.id}`)} 
-              style={userFieldStyle}
-            >
-              <UserIcon size={18} color="var(--accent)" />
-              <div style={{ display: 'flex', flexDirection: 'column', flex: 1, textAlign: 'center', lineHeight: '1.2' }}>
-                <span style={usernameStyle}>{user.username}</span>
-                <span style={{ 
-                  fontSize: '10px', 
-                  color: user.role === 'admin' ? 'var(--accent)' : '#a1887f',
-                  fontWeight: 'bold',
-                  textTransform: 'uppercase'
-                }}>
-                  {user.role}
-                </span>
-              </div>
-            </div>
+        <div className="sidebar-scrollable-content">
+          <div className="sidebar-item" onClick={() => menuClick('/')}>
+            <LayoutGrid size={18} /> Головна
+          </div>
+          <div className="sidebar-item" onClick={() => handleQuickFilter('new')}>
+            <Sparkles size={18} /> Новинки
+          </div>
+          <div className="sidebar-item" onClick={() => handleQuickFilter('top')}>
+            <Trophy size={18} /> Топ книги
+          </div>
+          <div className="sidebar-item" onClick={() => menuClick('/recommendations')}>
+            <Sparkles size={18} color="var(--accent)" /> Рекомендації
+          </div>
 
-            {user.role === 'admin' && (
-              <button onClick={() => navigate('/add-book')} className="action-btn" style={addBookBtnStyle}>
-                <PlusCircle size={16} /> Додати книгу
+          <div style={{ height: '30px' }}></div>
+
+          <div className="sidebar-item" onClick={() => alert('Шукаємо випадкову книгу...')}>
+            <Shuffle size={18} /> Рандомна книга
+          </div>
+        </div>
+
+        <div style={stickyBottomStyle}>
+          {/* Твоя кнопка смены темы */}
+          <div style={{ padding: '10px 0' }}>
+              <button onClick={toggleTheme} style={themeButtonStyle}>
+                  {isDarkMode ? '☀️ Світла тема' : '🌙 Темна тема'}
+              </button>
+          </div>
+
+          <div style={bottomSectionStyle}>
+            {user ? (
+              <>
+                <div 
+                  className="user-profile-field-sidebar"
+                  onClick={() => menuClick(`/profile/${user.id}`)} 
+                  style={userFieldStyle}
+                >
+                  <UserIcon size={18} color="var(--accent)" />
+                  <div style={{ display: 'flex', flexDirection: 'column', flex: 1, textAlign: 'center', lineHeight: '1.2' }}>
+                    <span style={usernameStyle}>{user.username}</span>
+                    <span style={{ 
+                      fontSize: '10px', 
+                      color: user.role === 'admin' ? 'var(--accent)' : '#a1887f',
+                      fontWeight: 'bold',
+                      textTransform: 'uppercase'
+                    }}>
+                      {user.role}
+                    </span>
+                  </div>
+                </div>
+
+                {user.role === 'admin' && (
+                  <button onClick={() => menuClick('/add-book')} className="action-btn" style={addBookBtnStyle}>
+                    <PlusCircle size={16} /> Додати книгу
+                  </button>
+                )}
+              </>
+            ) : (
+              <button onClick={() => menuClick('/login')} className="action-btn" style={loginBtnStyle}>
+                Увійти в кабінет
               </button>
             )}
-          </>
-        ) : (
-          <button onClick={() => navigate('/login')} className="action-btn" style={loginBtnStyle}>
-            Увійти в кабінет
-          </button>
-        )}
-      </div>
-    </aside>
+          </div>
+        </div>
+      </aside>
+    </>
   );
 };
 
-// --- СТИЛІ (без змін) ---
-const sidebarContainerStyle = { width: '240px', padding: '20px 15px', backgroundColor: '#2c1e1a', display: 'flex', flexDirection: 'column', alignSelf: 'stretch', boxSizing: 'border-box', borderRight: '1px solid rgba(255,255,255,0.05)', zIndex: 1000 };
+const sidebarContainerStyle = { 
+  width: '240px', 
+  padding: '20px 15px', 
+  backgroundColor: '#2c1e1a', 
+  boxSizing: 'border-box', 
+  zIndex: 1000 
+};
+
+const stickyBottomStyle = { marginTop: 'auto', paddingTop: '10px', backgroundColor: '#2c1e1a' };
+const themeButtonStyle = { width: '100%', padding: '10px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: '#d7ccc8', cursor: 'pointer', fontWeight: '600', fontSize: '13px' };
 const bottomSectionStyle = { paddingTop: '20px', borderTop: '1px solid rgba(255, 255, 255, 0.1)' };
 const userFieldStyle = { display: 'flex', alignItems: 'center', padding: '6px 15px', borderRadius: '20px', border: '1px solid var(--accent)', cursor: 'pointer', backgroundColor: 'transparent', color: '#f5f5f5', marginBottom: '15px' };
 const usernameStyle = { fontSize: '14px', fontWeight: '600' };

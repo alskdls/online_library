@@ -49,7 +49,6 @@ const Favorites = () => {
     <div style={pageWrapper}>
       <div style={containerStyle}>
         
-        {/* Блок заголовка – точна копія з Home.js */}
         <div style={{ textAlign: 'center', marginBottom: '30px' }}>
           <h2 style={genreTitleStyle}>
             Моє Обране
@@ -77,8 +76,6 @@ const Favorites = () => {
   );
 };
 
-// --- СТИЛІ (КОПІЯ З HOME.JS) ---
-
 const pageWrapper = {
   backgroundColor: 'var(--bg-color)',
   minHeight: '100vh',
@@ -87,7 +84,7 @@ const pageWrapper = {
 };
 
 const containerStyle = {
-  maxWidth: '1400px', // Як на головній
+  maxWidth: '1400px',
   margin: '0 auto'
 };
 

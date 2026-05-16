@@ -312,10 +312,28 @@ app.get('/books/:id/rating', async (req, res) => {
 app.post('/reviews', async (req, res) => {
   const { userId, bookId, rating, comment, parent_id } = req.body;
   try {
+    // Если это простая оценка (нет parent_id), используем логику обновления
+    if (!parent_id && rating) {
+      const result = await pool.query(`
+        INSERT INTO reviews (user_id, book_id, rating, comment, created_at)
+        VALUES ($1, $2, $3, $4, NOW())
+        ON CONFLICT (user_id, book_id) WHERE parent_id IS NULL
+        DO UPDATE SET 
+          rating = EXCLUDED.rating,
+          comment = COALESCE(EXCLUDED.comment, reviews.comment),
+          created_at = NOW()
+        RETURNING *;
+      `, [userId, bookId, rating, comment || null]);
+      return res.json(result.rows[0]);
+    }
+
+    // Если это нажатие кнопок статуса или ответ на комментарий (есть parent_id)
+    // оставляем твою оригинальную логику без изменений
     const result = await pool.query(`
-      INSERT INTO reviews (user_id, book_id, rating, comment, parent_id)
-      VALUES ($1, $2, $3, $4, $5) RETURNING *;
+      INSERT INTO reviews (user_id, book_id, rating, comment, parent_id, created_at)
+      VALUES ($1, $2, $3, $4, $5, NOW()) RETURNING *;
     `, [userId, bookId, rating || null, comment || null, parent_id || null]);
+    
     res.json(result.rows[0]);
   } catch (err) {
     console.error(err.message);

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom'; // Додали хук для читання URL
+import { useLocation } from 'react-router-dom';
 import BookCard from './BookCard';
 
 const BookList = ({ selectedGenre, searchQuery, extraFilters }) => {
@@ -7,7 +7,6 @@ const BookList = ({ selectedGenre, searchQuery, extraFilters }) => {
   const [favorites, setFavorites] = useState([]);
   const user = JSON.parse(localStorage.getItem('user'));
 
-  // Читаємо параметри з URL (наприклад, ?genre=3)
   const location = useLocation();
   const queryParams = new URLSearchParams(location.search);
   const urlGenreId = queryParams.get('genre');
@@ -27,23 +26,18 @@ const BookList = ({ selectedGenre, searchQuery, extraFilters }) => {
   }, [user?.id]);
 
   const filteredBooks = books.filter(book => {
-    // 1. Пошук за назвою або автором
     const matchesSearch = book.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
                           book.author.toLowerCase().includes(searchQuery.toLowerCase());
     
-    // Визначаємо поточний жанр (пріоритет у того, що в URL, потім те, що в Sidebar)
     const activeGenreId = urlGenreId ? parseInt(urlGenreId) : selectedGenre;
 
-    // 2. Якщо немає додаткових фільтрів (простий пошук/жанр)
     if (!extraFilters) {
       const matchesGenre = activeGenreId ? book.genre_id === activeGenreId : true;
       return matchesSearch && matchesGenre;
     }
 
-    // 3. Якщо увімкнені розширені фільтри
     const { selectedGenres, selectedAuthors, priceRange, selectedYears, pageFilter, onlyWithImages } = extraFilters;
 
-    // Жанр у фільтрах може бути масивом або одиничним вибором
     const matchesGenre = selectedGenres.length > 0 
       ? selectedGenres.includes(book.genre_id)
       : (activeGenreId ? book.genre_id === activeGenreId : true);
@@ -77,12 +71,12 @@ const BookList = ({ selectedGenre, searchQuery, extraFilters }) => {
       ) : (
         <div style={emptyStateStyle}>
           <div style={{ fontSize: '50px', marginBottom: '20px' }}>🔍</div>
-          <h2 style={{ color: '#2c3e50', marginBottom: '10px' }}>Книг не знайдено</h2>
-          <p style={{ color: '#7f8c8d', maxWidth: '400px', margin: '0 auto 20px auto' }}>
+          <h2 style={{ color: 'var(--text-main)', marginBottom: '10px' }}>Книг не знайдено</h2>
+          <p style={{ color: 'var(--text-muted)', maxWidth: '400px', margin: '0 auto 20px auto' }}>
             На жаль, за вашим запитом нічого не знайдено. Спробуйте змінити параметри фільтрів або перевірте правильність написання.
           </p>
           <button 
-            onClick={() => window.location.replace('/')} // Повертаємо на головну
+            onClick={() => window.location.replace('/')} 
             style={resetAllBtnStyle}
           >
             Скинути всі фільтри
@@ -93,13 +87,13 @@ const BookList = ({ selectedGenre, searchQuery, extraFilters }) => {
   );
 };
 
-// --- СТИЛІ (БЕЗ ЗМІН) ---
 
 const mainWrapperStyle = {
   padding: '40px 20px',
   width: '100%',
   boxSizing: 'border-box',
-  minHeight: '80vh'
+  minHeight: '80vh',
+  backgroundColor: 'transparent' 
 };
 
 const gridContainerStyle = {
@@ -119,11 +113,12 @@ const emptyStateStyle = {
   justifyContent: 'center',
   textAlign: 'center',
   marginTop: '100px',
-  width: '100%'
+  width: '100%',
+  color: 'var(--text-main)'
 };
 
 const resetAllBtnStyle = {
-  backgroundColor: '#3498db',
+  backgroundColor: 'var(--accent)', 
   color: 'white',
   border: 'none',
   padding: '12px 25px',
@@ -132,7 +127,7 @@ const resetAllBtnStyle = {
   fontWeight: 'bold',
   fontSize: '14px',
   transition: 'all 0.3s ease',
-  boxShadow: '0 4px 10px rgba(52, 152, 219, 0.3)'
+  boxShadow: '0 4px 10px rgba(0, 0, 0, 0.2)'
 };
 
 export default BookList;

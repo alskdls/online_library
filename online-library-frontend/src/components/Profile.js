@@ -20,44 +20,6 @@ const Profile = ({ socket }) => {
   const [modal, setModal] = useState({ isOpen: false, type: null, data: [], loading: false });
   const [counts, setCounts] = useState({ reading: 0, completed: 0, planned: 0, dropped: 0 });
 
-useEffect(() => {
-    const fetchProfile = async () => { /* твой код */ };
-    fetchProfile();
-    fetchCounts();
-}, [id, currentUser?.id]);
-
-// 2. Твой существующий эффект для загрузки книг
-useEffect(() => {
-    const fetchUserBooks = async () => { /* твой код */ };
-    fetchUserBooks();
-}, [currentTab, id]);
-
-// === ВСТАВЛЯЙ СЮДА ===
-useEffect(() => {
-  const handleStorageChange = () => {
-    const updatedUser = JSON.parse(localStorage.getItem('user'));
-    // Проверяем, что мы обновляем профиль именно текущего залогиненного юзера
-    if (updatedUser && (!id || parseInt(id) === updatedUser.id)) {
-      setProfileData(prev => ({ ...prev, ...updatedUser }));
-    }
-  };
-
-  window.addEventListener('userUpdate', handleStorageChange);
-  return () => window.removeEventListener('userUpdate', handleStorageChange);
-}, [id]);
-
-  const fetchCounts = async () => {
-    const targetId = id || currentUser?.id;
-    if (!targetId) return;
-    try {
-      const res = await fetch(`http://localhost:5000/users/${targetId}/book-counts`);
-      if (res.ok) {
-        const data = await res.json();
-        setCounts(data);
-      }
-    } catch (err) { console.error("Ошибка счетчиков:", err); }
-  };
-
   useEffect(() => {
     const fetchProfile = async () => {
       setLoading(true);
@@ -94,14 +56,34 @@ useEffect(() => {
     fetchUserBooks();
   }, [currentTab, id]);
 
+  useEffect(() => {
+    const handleStorageChange = () => {
+      const updatedUser = JSON.parse(localStorage.getItem('user'));
+      if (updatedUser && (!id || parseInt(id) === updatedUser.id)) {
+        setProfileData(prev => ({ ...prev, ...updatedUser }));
+      }
+    };
+    window.addEventListener('userUpdate', handleStorageChange);
+    return () => window.removeEventListener('userUpdate', handleStorageChange);
+  }, [id]);
+
+  const fetchCounts = async () => {
+    const targetId = id || currentUser?.id;
+    if (!targetId) return;
+    try {
+      const res = await fetch(`http://localhost:5000/users/${targetId}/book-counts`);
+      if (res.ok) {
+        const data = await res.json();
+        setCounts(data);
+      }
+    } catch (err) { console.error("Ошибка счетчиков:", err); }
+  };
+
   const scrollToCompleted = () => {
     setCurrentTab('completed');
     setTimeout(() => {
-    booksSectionRef.current?.scrollIntoView({ 
-      behavior: 'smooth', 
-      block: 'start' // Прокрутит так, чтобы заголовок секции стал у верхнего края
-    });
-  }, 10);
+      booksSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 10);
   };
 
   const openModal = async (type) => {
@@ -140,30 +122,24 @@ useEffect(() => {
   };
 
   const handleAvatarChange = async (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
-  const formData = new FormData();
-  formData.append('avatar', file);
-  try {
-    const res = await fetch(`http://localhost:5000/users/${profileData.id}/avatar`, {
-      method: 'POST',
-      body: formData
-    });
-    if (res.ok) {
-      const data = await res.json();
-      
-      // 1. Обновляем состояние самого профиля
-      setProfileData(prev => ({ ...prev, avatar_url: data.avatar_url }));
-
-      // 2. ОБЯЗАТЕЛЬНО: Обновляем localStorage, чтобы шапка и настройки увидели изменения
-      const updatedUser = { ...currentUser, avatar_url: data.avatar_url };
-      localStorage.setItem('user', JSON.stringify(updatedUser));
-
-      // 3. Кидаем событие, чтобы другие компоненты (Header, Settings) перерисовались
-      window.dispatchEvent(new Event('userUpdate'));
-    }
-  } catch (err) { console.error("Ошибка аватара:", err); }
-};
+    const file = e.target.files[0];
+    if (!file) return;
+    const formData = new FormData();
+    formData.append('avatar', file);
+    try {
+      const res = await fetch(`http://localhost:5000/users/${profileData.id}/avatar`, {
+        method: 'POST',
+        body: formData
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setProfileData(prev => ({ ...prev, avatar_url: data.avatar_url }));
+        const updatedUser = { ...currentUser, avatar_url: data.avatar_url };
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+        window.dispatchEvent(new Event('userUpdate'));
+      }
+    } catch (err) { console.error("Ошибка аватара:", err); }
+  };
 
   const handleLogout = () => {
     if (socket) socket.disconnect();
@@ -182,7 +158,6 @@ useEffect(() => {
     e.currentTarget.style.boxShadow = '0 8px 20px rgba(0,0,0,0.05)';
   };
 
-  // --- ИКОНКИ (SVG) ---
   const LikeIcon = ({ color, style }) => (
     <svg width="20" height="20" viewBox="0 0 24 24" fill={color} style={{...style}}><path d="M1 21h4V9H1v12zm22-11c0-1.1-.9-2-2-2h-6.31l.95-4.57.03-.32c0-.41-.17-.79-.44-1.06L14.17 1 7.59 7.59C7.22 7.95 7 8.45 7 9v10c0 1.1.9 2 2 2h9c.83 0 1.54-.5 1.84-1.22l3.02-7.05c.09-.23.14-.47.14-.73v-2z"/></svg>
   );
@@ -195,8 +170,8 @@ useEffect(() => {
   const DroppedIcon = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>;
   const EditIcon = () => <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>;
 
-  if (loading) return <div style={pageWrapper}><p style={{textAlign:'center'}}>Завантаження...</p></div>;
-  if (!profileData) return <div style={pageWrapper}><div style={containerStyle}><p style={{ textAlign: 'center' }}>Користувача не знайдено.</p></div></div>;
+  if (loading) return <div style={pageWrapper}><p style={{textAlign:'center', color: 'var(--text-main)'}}>Завантаження...</p></div>;
+  if (!profileData) return <div style={pageWrapper}><div style={containerStyle}><p style={{ textAlign: 'center', color: 'var(--text-main)' }}>Користувача не знайдено.</p></div></div>;
 
   const isOwnProfile = currentUser && profileData.id === currentUser.id;
 
@@ -252,13 +227,11 @@ useEffect(() => {
         </div>
 
         <div style={statsGrid}>
-          {/* КАРТОЧКА ПРОЧИТАНО - СКРОЛЛИТ ВНИЗ */}
           <div style={{...statCard, cursor: 'pointer'}} onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave} onClick={scrollToCompleted}>
             <span style={statValue}>{counts.completed || 0}</span>
             <span style={statLabel}>Прочитано книг</span>
           </div>
 
-          {/* КАРТОЧКА ДРУЗЬЯ - ОТКРЫВАЕТ МОДАЛКУ */}
           <div style={{...statCard, cursor: 'pointer'}} onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave} onClick={() => openModal('friends')}>
             <span style={statValue}>0</span>
             <span style={statLabel}>Друзі</span>
@@ -274,7 +247,6 @@ useEffect(() => {
             <div style={subLabel}><DislikeIcon color="#e74c3c" style={{marginBottom: '5px'}}/>Не подобається</div>
           </div>
 
-          {/* КАРТОЧКА ОТЗЫВЫ - ОТКРЫВАЕТ МОДАЛКУ */}
           <div style={{...statCard, cursor: 'pointer'}} onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave} onClick={() => openModal('reviews')}>
             <span style={statValue}>{profileData.reviews_count || 0}</span>
             <span style={statLabel}>Написано відгуків</span>
@@ -298,7 +270,7 @@ useEffect(() => {
 
           <div style={contentBox}>
             {booksLoading ? (
-              <p style={{ textAlign: 'center', opacity: 0.5 }}>Завантаження...</p>
+              <p style={{ textAlign: 'center', opacity: 0.5, color: 'var(--text-main)' }}>Завантаження...</p>
             ) : books.length > 0 ? (
               books.map(book => (
                 <div key={book.id} style={bookRowStyle}>
@@ -320,154 +292,123 @@ useEffect(() => {
                 </div>
               ))
             ) : (
-              <p style={{ opacity: 0.5, textAlign: 'center' }}>Список порожній</p>
+              <p style={{ opacity: 0.5, textAlign: 'center', color: 'var(--text-main)' }}>Список порожній</p>
             )}
           </div>
         </div>
 
-        {/* УНИВЕРСАЛЬНАЯ МОДАЛКА (ОБНОВЛЕННАЯ ПОД ОТЗЫВЫ) */}
-{modal.isOpen && (
-  <div style={overlayStyle} onClick={closeModal} className="modal-overlay">
-    <div style={modalContent} onClick={(e) => e.stopPropagation()}>
-      <button style={closeBtnStyle} onClick={closeModal}>✕</button>
-      <div style={modalHeader}>
-        <div style={{display: 'flex', alignItems: 'center', gap: '10px'}}>
-          {modal.type === 'like' && <LikeIcon color="#2ecc71" />}
-          {modal.type === 'dislike' && <DislikeIcon color="#e74c3c" />}
-          <h3 style={{margin: 0, color: '#2c1e1a', fontSize: '18px'}}>
-            {modal.type === 'like' && 'Подобається'}
-            {modal.type === 'dislike' && 'Не подобається'}
-            {modal.type === 'friends' && 'Список друзів'}
-            {modal.type === 'reviews' && 'Мої відгуки'}
-          </h3>
-        </div>
-      </div>
-
-      <div style={modalBody} className="modal-body-scroll">
-        {modal.loading ? (
-          <p style={{textAlign: 'center', padding: '20px', opacity: 0.5}}>Завантаження...</p>
-        ) : modal.data.length > 0 ? (
-          modal.data.map((item, index) => (
-            <Link 
-              key={index} 
-              to={item.book_id ? `/book/${item.book_id}` : `/user/${item.id}`} 
-              onClick={closeModal} 
-              style={modal.type === 'reviews' ? reviewCardStyle : modalBookItem}
-            >
-              <img src={item.image_url || item.avatar_url || "https://kappa.lol/pAubra"} alt="" style={modalBookCover} />
-              
-              <div style={modalBookTextInfo}>
-                <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%'}}>
-                  <div style={modalBookTitle}>{item.title || item.username}</div>
-                  {item.created_at && (
-                    <span style={{fontSize: '11px', color: '#bbb'}}>
-                      {new Date(item.created_at).toLocaleDateString()}
-                    </span>
-                  )}
+        {modal.isOpen && (
+          <div style={overlayStyle} onClick={closeModal} className="modal-overlay">
+            <div style={modalContent} onClick={(e) => e.stopPropagation()}>
+              <button style={closeBtnStyle} onClick={closeModal}>✕</button>
+              <div style={modalHeader}>
+                <div style={{display: 'flex', alignItems: 'center', gap: '10px'}}>
+                  {modal.type === 'like' && <LikeIcon color="#2ecc71" />}
+                  {modal.type === 'dislike' && <DislikeIcon color="#e74c3c" />}
+                  <h3 style={{margin: 0, color: 'var(--text-main)', fontSize: '18px'}}>
+                    {modal.type === 'like' && 'Подобається'}
+                    {modal.type === 'dislike' && 'Не подобається'}
+                    {modal.type === 'friends' && 'Список друзів'}
+                    {modal.type === 'reviews' && 'Мої відгуки'}
+                  </h3>
                 </div>
-                
-                {modal.type === 'reviews' ? (
-                  <div style={reviewTextStyle}>"{item.review_text}"</div>
+              </div>
+
+              <div style={modalBody} className="modal-body-scroll">
+                {modal.loading ? (
+                  <p style={{textAlign: 'center', padding: '20px', opacity: 0.5, color: 'var(--text-main)'}}>Завантаження...</p>
+                ) : modal.data.length > 0 ? (
+                  modal.data.map((item, index) => (
+                    <Link 
+                      key={index} 
+                      to={item.book_id ? `/book/${item.book_id}` : `/user/${item.id}`} 
+                      onClick={closeModal} 
+                      style={modal.type === 'reviews' ? reviewCardStyle : modalBookItem}
+                    >
+                      <img src={item.image_url || item.avatar_url || "https://kappa.lol/pAubra"} alt="" style={modalBookCover} />
+                      <div style={modalBookTextInfo}>
+                        <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%'}}>
+                          <div style={modalBookTitle}>{item.title || item.username}</div>
+                          {item.created_at && (
+                            <span style={{fontSize: '11px', color: 'var(--text-muted)'}}>
+                              {new Date(item.created_at).toLocaleDateString()}
+                            </span>
+                          )}
+                        </div>
+                        {modal.type === 'reviews' ? (
+                          <div style={reviewTextStyle}>"{item.review_text}"</div>
+                        ) : (
+                          <div style={modalBookAuthor}>{item.author || (item.is_online ? 'В мережі' : 'Офлайн')}</div>
+                        )}
+                      </div>
+                    </Link>
+                  ))
                 ) : (
-                  <div style={modalBookAuthor}>{item.author || (item.is_online ? 'В мережі' : 'Офлайн')}</div>
+                  <p style={{textAlign: 'center', padding: '20px', color: 'var(--text-muted)'}}>Список порожній</p>
                 )}
               </div>
-            </Link>
-          ))
-        ) : (
-          <p style={{textAlign: 'center', padding: '20px', color: '#999'}}>Список порожній</p>
+            </div>
+          </div>
         )}
-      </div>
-    </div>
-  </div>
-)}
       </div>
     </div>
   );
 };
 
-// --- СТИЛИ (ТВОИ РОДНЫЕ) ---
-const pageWrapper = { backgroundColor: '#fcfaf9', minHeight: '100vh', padding: '40px 20px' };
+const pageWrapper = { backgroundColor: 'var(--bg-color)', minHeight: '100vh', padding: '40px 20px', transition: '0.3s ease' };
 const containerStyle = { maxWidth: '1100px', margin: '0 auto' };
-const genreTitleStyle = { fontSize: '28px', color: '#2c1e1a', fontWeight: 'bold', textTransform: 'uppercase' };
-const underlineStyle = { height: '4px', width: '60px', background: '#8d6e63', margin: '0 auto', borderRadius: '2px' };
-const profileHeaderCard = { backgroundColor: '#fff', borderRadius: '15px', overflow: 'hidden', marginBottom: '30px', boxShadow: '0 10px 30px rgba(0,0,0,0.08)', border: '1px solid #eee' };
-const bannerArea = { height: '180px', background: 'linear-gradient(135deg, #4b3832 0%, #8d6e63 100%)' };
+const genreTitleStyle = { fontSize: '28px', color: 'var(--text-main)', fontWeight: 'bold', textTransform: 'uppercase' };
+const underlineStyle = { height: '4px', width: '60px', background: 'var(--accent)', margin: '0 auto', borderRadius: '2px' };
+const profileHeaderCard = { backgroundColor: 'var(--card-bg)', borderRadius: '15px', overflow: 'hidden', marginBottom: '30px', boxShadow: '0 10px 30px rgba(0,0,0,0.08)', border: '1px solid var(--border-color)' };
+const bannerArea = { height: '180px', background: 'linear-gradient(135deg, var(--banner-gradient-start, #4b3832) 0%, var(--accent) 100%)' };
 const userMainInfo = { display: 'flex', padding: '0 40px 30px 40px', marginTop: '-50px', alignItems: 'flex-end', gap: '30px', flexWrap: 'wrap' };
-const avatarContainer = { width: '140px', height: '140px', borderRadius: '20px', backgroundColor: '#333', border: '6px solid #fff', display: 'flex', justifyContent: 'center', alignItems: 'center', boxShadow: '0 5px 15px rgba(0,0,0,0.2)', position: 'relative', overflow: 'hidden' };
-const avatarPlaceholder = { fontSize: '60px', color: '#8d6e63', fontWeight: 'bold' };
+const avatarContainer = { width: '140px', height: '140px', borderRadius: '20px', backgroundColor: '#333', border: '6px solid var(--card-bg)', display: 'flex', justifyContent: 'center', alignItems: 'center', boxShadow: '0 5px 15px rgba(0,0,0,0.2)', position: 'relative', overflow: 'hidden' };
+const avatarPlaceholder = { fontSize: '60px', color: 'var(--accent)', fontWeight: 'bold' };
 const uploadOverlay = { position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(0,0,0,0.4)', display: 'flex', justifyContent: 'center', alignItems: 'center', pointerEvents: 'none' };
 const textInfo = { display: 'flex', flexDirection: 'column', paddingBottom: '10px', alignItems: 'flex-start' };
-const userName = { margin: '0', fontSize: '28px', fontWeight: 'bold', color: '#2c1e1a' };
+const userName = { margin: '0', fontSize: '28px', fontWeight: 'bold', color: 'var(--text-main)' };
 const statusWrapper = { display: 'flex', alignItems: 'center', gap: '15px', marginTop: '5px' };
-const userRole = { margin: '0', color: '#8d6e63', fontWeight: '500', fontSize: '15px' };
+const userRole = { margin: '0', color: 'var(--accent)', fontWeight: '500', fontSize: '15px' };
 const statusBadge = (on) => ({ display: 'flex', alignItems: 'center', gap: '8px', padding: '4px 12px', borderRadius: '20px', border: `1px solid ${on ? '#2ecc71' : '#e74c3c'}`, color: on ? '#27ae60' : '#c0392b', fontSize: '12px', fontWeight: 'bold', backgroundColor: on ? 'rgba(46, 204, 113, 0.1)' : 'rgba(231, 76, 60, 0.1)' });
 const statusDot = (on) => ({ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: on ? '#2ecc71' : '#e74c3c' });
 const actionButtons = { display: 'flex', gap: '12px', paddingBottom: '10px', marginLeft: 'auto' };
-const editBtn = { padding: '10px 25px', backgroundColor: '#8d6e63', border: 'none', borderRadius: '8px', color: 'white', cursor: 'pointer', fontWeight: 'bold' };
+const editBtn = { padding: '10px 25px', backgroundColor: 'var(--accent)', border: 'none', borderRadius: '8px', color: 'white', cursor: 'pointer', fontWeight: 'bold' };
 const logoutBtn = { padding: '10px 25px', backgroundColor: 'transparent', border: '1px solid #e74c3c', color: '#e74c3c', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' };
 
-const reviewCardStyle = { 
-  display: 'flex', 
-  alignItems: 'flex-start', // Выравнивание по верху для длинных текстов
-  padding: '15px', 
-  borderBottom: '1px solid #f2f2f2', 
-  textDecoration: 'none',
-  transition: 'background 0.2s',
-  borderRadius: '8px'
-};
+const reviewCardStyle = { display: 'flex', alignItems: 'flex-start', padding: '15px', borderBottom: '1px solid var(--border-color)', textDecoration: 'none', transition: 'background 0.2s', borderRadius: '8px' };
+const reviewTextStyle = { fontSize: '14px', color: 'var(--text-muted)', fontStyle: 'italic', marginTop: '8px', lineHeight: '1.4', backgroundColor: 'var(--bg-color)', padding: '8px', borderRadius: '6px', width: '100%', textAlign: 'left', display: 'block' };
 
-const reviewTextStyle = { 
-  fontSize: '14px', 
-  color: '#555', 
-  fontStyle: 'italic', 
-  marginTop: '8px',
-  lineHeight: '1.4',
-  backgroundColor: '#fdfcfc',
-  padding: '8px',
-  borderRadius: '6px',
-  width: '100%',
-  textAlign: 'left', // Текст строго слева
-  display: 'block'    // Гарантирует, что блок займет всю ширину
-};
 const statsGrid = { display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '15px', marginBottom: '40px' };
-const statCard = { backgroundColor: '#fff', height: '140px', borderRadius: '15px', textAlign: 'center', borderBottom: '4px solid #8d6e63', boxShadow: '0 8px 20px rgba(0,0,0,0.05)', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', transition: '0.3s' };
+const statCard = { backgroundColor: 'var(--card-bg)', height: '140px', borderRadius: '15px', textAlign: 'center', borderBottom: '4px solid var(--accent)', boxShadow: '0 8px 20px rgba(0,0,0,0.05)', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', transition: '0.3s' };
 const smallStatCard = { ...statCard, padding: '10px' };
-const statValue = { fontSize: '24px', fontWeight: 'bold', color: '#2c1e1a' };
-const statLabel = { fontSize: '11px', fontWeight: 'bold', color: '#8d6e63', textTransform: 'uppercase', marginTop: '8px' };
-const subLabel = { fontSize: '10px', fontWeight: 'bold', color: '#8d6e63', textTransform: 'uppercase', display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: '5px' };
+const statValue = { fontSize: '24px', fontWeight: 'bold', color: 'var(--text-main)' };
+const statLabel = { fontSize: '11px', fontWeight: 'bold', color: 'var(--accent)', textTransform: 'uppercase', marginTop: '8px' };
+const subLabel = { fontSize: '10px', fontWeight: 'bold', color: 'var(--accent)', textTransform: 'uppercase', display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: '5px' };
 
-const bottomSection = { backgroundColor: '#fff', borderRadius: '15px', padding: '30px', boxShadow: '0 8px 20px rgba(0,0,0,0.05)' };
-const tabsHeader = { display: 'flex', gap: '30px', borderBottom: '2px solid #f5f5f5', paddingBottom: '15px', marginBottom: '25px' };
-const tab = { display: 'flex', alignItems: 'center', gap: '8px', color: '#999', cursor: 'pointer', fontWeight: '500', paddingBottom: '13px', borderBottom: '3px solid transparent' };
-const activeTab = { ...tab, color: '#8d6e63', borderBottom: '3px solid #8d6e63', fontWeight: 'bold' };
-const badgeStyle = (isActive) => ({ backgroundColor: isActive ? '#8d6e63' : '#f0f0f0', color: isActive ? '#fff' : '#888', padding: '2px 8px', borderRadius: '10px', fontSize: '12px' });
+const bottomSection = { backgroundColor: 'var(--card-bg)', borderRadius: '15px', padding: '30px', boxShadow: '0 8px 20px rgba(0,0,0,0.05)' };
+const tabsHeader = { display: 'flex', gap: '30px', borderBottom: '2px solid var(--border-color)', paddingBottom: '15px', marginBottom: '25px' };
+const tab = { display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-muted)', cursor: 'pointer', fontWeight: '500', paddingBottom: '13px', borderBottom: '3px solid transparent' };
+const activeTab = { ...tab, color: 'var(--accent)', borderBottom: '3px solid var(--accent)', fontWeight: 'bold' };
+const badgeStyle = (isActive) => ({ backgroundColor: isActive ? 'var(--accent)' : 'var(--bg-color)', color: isActive ? '#fff' : 'var(--text-muted)', padding: '2px 8px', borderRadius: '10px', fontSize: '12px' });
 const contentBox = { display: 'flex', flexDirection: 'column', gap: '10px' };
-const bookRowStyle = { display: 'flex', alignItems: 'center', padding: '12px', borderBottom: '1px solid #eee' };
+const bookRowStyle = { display: 'flex', alignItems: 'center', padding: '12px', borderBottom: '1px solid var(--border-color)' };
 const bookRowImage = { width: '50px', height: '70px', objectFit: 'cover', borderRadius: '6px' };
 const bookRowTextInfo = { marginLeft: '20px', display: 'flex', flexDirection: 'column', alignItems: 'flex-start' };
-const bookTitleStyle = { fontWeight: 'bold', color: '#2c1e1a' };
-const bookAuthorStyle = { fontSize: '14px', color: '#8d6e63' };
+const bookTitleStyle = { fontWeight: 'bold', color: 'var(--text-main)' };
+const bookAuthorStyle = { fontSize: '14px', color: 'var(--accent)' };
 const actionIconsContainer = { display: 'flex', gap: '10px', marginLeft: 'auto' };
-const iconBtnStyle = { background: '#f8f8f8', border: 'none', borderRadius: '8px', padding: '10px', cursor: 'pointer', color: '#999' };
+const iconBtnStyle = { background: 'var(--bg-color)', border: 'none', borderRadius: '8px', padding: '10px', cursor: 'pointer', color: 'var(--text-muted)' };
 
 const overlayStyle = { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0, 0, 0, 0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000 };
-const modalContent = { backgroundColor: '#fff', padding: '30px', borderRadius: '16px', width: '450px', maxWidth: '95%', maxHeight: '80vh', position: 'relative', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 40px rgba(0,0,0,0.1)' };
-const closeBtnStyle = { position: 'absolute', top: '15px', right: '15px', border: 'none', background: 'none', fontSize: '18px', cursor: 'pointer', color: '#999' };
-const modalHeader = { borderBottom: '1px solid #eee', paddingBottom: '15px', marginBottom: '15px' };
+const modalContent = { backgroundColor: 'var(--card-bg)', padding: '30px', borderRadius: '16px', width: '450px', maxWidth: '95%', maxHeight: '80vh', position: 'relative', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 40px rgba(0,0,0,0.1)' };
+const closeBtnStyle = { position: 'absolute', top: '15px', right: '15px', border: 'none', background: 'none', fontSize: '18px', cursor: 'pointer', color: 'var(--text-muted)' };
+const modalHeader = { borderBottom: '1px solid var(--border-color)', paddingBottom: '15px', marginBottom: '15px' };
 const modalBody = { overflowY: 'auto', flex: 1 };
-const modalBookItem = { display: 'flex', alignItems: 'center', padding: '12px', borderBottom: '1px solid #f9f9f9', textDecoration: 'none' };
+const modalBookItem = { display: 'flex', alignItems: 'center', padding: '12px', borderBottom: '1px solid var(--border-color)', textDecoration: 'none' };
 const modalBookCover = { width: '50px', height: '70px', objectFit: 'cover', borderRadius: '6px' };
-const modalBookTextInfo = { 
-  marginLeft: '20px', 
-  display: 'flex', 
-  flexDirection: 'column', 
-  alignItems: 'flex-start', // Все элементы внутри (заголовок, дата, текст) прижаты влево
-  flex: 1,
-  textAlign: 'left' 
-};
-const modalBookTitle = { fontWeight: 'bold', color: '#2c1e1a', fontSize: '15px' };
-const modalBookAuthor = { fontSize: '13px', color: '#8d6e63', marginTop: '2px' };
+const modalBookTextInfo = { marginLeft: '20px', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', flex: 1, textAlign: 'left' };
+const modalBookTitle = { fontWeight: 'bold', color: 'var(--text-main)', fontSize: '15px' };
+const modalBookAuthor = { fontSize: '13px', color: 'var(--accent)', marginTop: '2px' };
 
 const modalAnimationStyles = (
   <style>
@@ -478,7 +419,7 @@ const modalAnimationStyles = (
       .modal-overlay { animation: overlayFade 0.3s ease-out; backdrop-filter: blur(4px); }
       .modal-overlay > div { animation: modalSlideUp 0.4s cubic-bezier(0.165, 0.84, 0.44, 1); }
       .modal-body-scroll::-webkit-scrollbar { width: 6px; }
-      .modal-body-scroll::-webkit-scrollbar-thumb { background: #ccc; border-radius: 10px; }
+      .modal-body-scroll::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 10px; }
     `}
   </style>
 );

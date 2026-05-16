@@ -11,6 +11,7 @@ const Register = () => {
     e.preventDefault();
     try {
       const response = await fetch('http://localhost:5000/auth/register', {
+        // Логика без изменений
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, email, password })
@@ -50,7 +51,7 @@ const Register = () => {
           />
           <button type="submit" style={buttonStyle}>Створити акаунт</button>
         </form>
-        <p style={{ marginTop: '15px', fontSize: '14px', textAlign: 'center' }}>
+        <p style={{ marginTop: '15px', fontSize: '14px', textAlign: 'center', color: 'var(--text-main)' }}>
           Вже є акаунт? <span onClick={() => navigate('/login')} style={linkStyle}>Увійти</span>
         </p>
       </div>
@@ -62,8 +63,9 @@ const authPageWrapper = {
   display: 'flex',
   justifyContent: 'center',
   alignItems: 'center',
-  minHeight: '80vh', // Центрує по вертикалі відносно екрана
-  backgroundColor: '#f9f9f9'
+  minHeight: '80vh',
+  backgroundColor: 'var(--bg-color)',
+  transition: 'background-color 0.3s ease'
 };
 
 const formContainerStyle = {
@@ -71,15 +73,16 @@ const formContainerStyle = {
   maxWidth: '350px',
   padding: '40px',
   borderRadius: '12px',
-  backgroundColor: '#fff',
+  backgroundColor: 'var(--card-bg)',
   boxShadow: '0 8px 24px rgba(0,0,0,0.1)',
-  border: '1px solid #eee'
+  border: '1px solid var(--border-color)',
+  transition: 'all 0.3s ease'
 };
 
 const headerStyle = {
   textAlign: 'center',
   marginBottom: '25px',
-  color: '#2c3e50',
+  color: 'var(--text-main)',
   fontSize: '24px'
 };
 
@@ -88,26 +91,29 @@ const inputStyle = {
   padding: '12px',
   marginBottom: '15px',
   borderRadius: '6px',
-  border: '1px solid #ddd',
+  border: '1px solid var(--border-color)',
   boxSizing: 'border-box',
-  fontSize: '16px'
+  fontSize: '16px',
+  backgroundColor: 'var(--bg-color)',
+  color: 'var(--text-main)',
+  outline: 'none'
 };
 
 const buttonStyle = {
   width: '100%',
   padding: '12px',
-  backgroundColor: '#27ae60',
+  backgroundColor: 'var(--accent)',
   color: 'white',
   border: 'none',
   borderRadius: '6px',
   cursor: 'pointer',
   fontSize: '16px',
   fontWeight: 'bold',
-  transition: 'background 0.3s'
+  transition: 'opacity 0.3s'
 };
 
 const linkStyle = {
-  color: '#27ae60',
+  color: 'var(--accent)',
   cursor: 'pointer',
   fontWeight: 'bold',
   textDecoration: 'underline'
