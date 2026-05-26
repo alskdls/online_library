@@ -20,6 +20,19 @@ const Profile = ({ socket }) => {
   const [modal, setModal] = useState({ isOpen: false, type: null, data: [], loading: false });
   const [counts, setCounts] = useState({ reading: 0, completed: 0, planned: 0, dropped: 0 });
 
+  // Синхронизация темы для внутренних элементов
+  const [themeMode, setThemeMode] = useState(localStorage.getItem('theme') || 'light');
+  useEffect(() => {
+    const syncTheme = () => {
+      const currentTheme = localStorage.getItem('theme') || 'light';
+      if (currentTheme !== themeMode) setThemeMode(currentTheme);
+    };
+    const interval = setInterval(syncTheme, 100);
+    return () => clearInterval(interval);
+  }, [themeMode]);
+
+  const isDarkMode = themeMode === 'dark';
+
   useEffect(() => {
     const fetchProfile = async () => {
       setLoading(true);
@@ -55,17 +68,6 @@ const Profile = ({ socket }) => {
     };
     fetchUserBooks();
   }, [currentTab, id]);
-
-  useEffect(() => {
-    const handleStorageChange = () => {
-      const updatedUser = JSON.parse(localStorage.getItem('user'));
-      if (updatedUser && (!id || parseInt(id) === updatedUser.id)) {
-        setProfileData(prev => ({ ...prev, ...updatedUser }));
-      }
-    };
-    window.addEventListener('userUpdate', handleStorageChange);
-    return () => window.removeEventListener('userUpdate', handleStorageChange);
-  }, [id]);
 
   const fetchCounts = async () => {
     const targetId = id || currentUser?.id;
@@ -170,13 +172,18 @@ const Profile = ({ socket }) => {
   const DroppedIcon = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>;
   const EditIcon = () => <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>;
 
-  if (loading) return <div style={pageWrapper}><p style={{textAlign:'center', color: 'var(--text-main)'}}>Завантаження...</p></div>;
-  if (!profileData) return <div style={pageWrapper}><div style={containerStyle}><p style={{ textAlign: 'center', color: 'var(--text-main)' }}>Користувача не знайдено.</p></div></div>;
+  if (loading) return <div style={{...pageWrapper, background: 'transparent'}}><p style={{textAlign:'center', color: 'var(--text-main)'}}>Завантаження...</p></div>;
+  if (!profileData) return <div style={{...pageWrapper, background: 'transparent'}}><div style={containerStyle}><p style={{ textAlign: 'center', color: 'var(--text-main)' }}>Користувача не знайдено.</p></div></div>;
 
   const isOwnProfile = currentUser && profileData.id === currentUser.id;
 
   return (
-    <div style={pageWrapper}>
+    <div style={{...pageWrapper, backgroundColor: 'transparent'}}>
+      {/* Магия: делаем обертку прозрачной, чтобы была видна основа Home.js */}
+      <style>{`
+        body { transition: none !important; }
+        * { transition: none !important; }
+      `}</style>
       {modalAnimationStyles}
       <div style={containerStyle}>
         <div style={{ textAlign: 'center', marginBottom: '40px' }}>
@@ -197,7 +204,7 @@ const Profile = ({ socket }) => {
                 <img 
                   src={`http://localhost:5000${profileData.avatar_url}`} 
                   alt="Avatar" 
-                  style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '14px', opacity: (isOwnProfile && avatarHover) ? 0.6 : 1, transition: '0.3s ease' }} 
+                  style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '14px', opacity: (isOwnProfile && avatarHover) ? 0.6 : 1 }} 
                 />
               ) : (
                 <div style={avatarPlaceholder}>{profileData.username?.charAt(0).toUpperCase()}</div>
@@ -355,12 +362,13 @@ const Profile = ({ socket }) => {
   );
 };
 
-const pageWrapper = { backgroundColor: 'var(--bg-color)', minHeight: '100vh', padding: '40px 20px', transition: '0.3s ease' };
+// Стили - ВОЗВРАЩАЕМ БЛОКИ, но убираем фон у pageWrapper
+const pageWrapper = { minHeight: '100vh', padding: '40px 20px' };
 const containerStyle = { maxWidth: '1100px', margin: '0 auto' };
 const genreTitleStyle = { fontSize: '28px', color: 'var(--text-main)', fontWeight: 'bold', textTransform: 'uppercase' };
 const underlineStyle = { height: '4px', width: '60px', background: 'var(--accent)', margin: '0 auto', borderRadius: '2px' };
 const profileHeaderCard = { backgroundColor: 'var(--card-bg)', borderRadius: '15px', overflow: 'hidden', marginBottom: '30px', boxShadow: '0 10px 30px rgba(0,0,0,0.08)', border: '1px solid var(--border-color)' };
-const bannerArea = { height: '180px', background: 'linear-gradient(135deg, var(--banner-gradient-start, #4b3832) 0%, var(--accent) 100%)' };
+const bannerArea = { height: '180px', background: 'linear-gradient(135deg, #4b3832 0%, var(--accent) 100%)' };
 const userMainInfo = { display: 'flex', padding: '0 40px 30px 40px', marginTop: '-50px', alignItems: 'flex-end', gap: '30px', flexWrap: 'wrap' };
 const avatarContainer = { width: '140px', height: '140px', borderRadius: '20px', backgroundColor: '#333', border: '6px solid var(--card-bg)', display: 'flex', justifyContent: 'center', alignItems: 'center', boxShadow: '0 5px 15px rgba(0,0,0,0.2)', position: 'relative', overflow: 'hidden' };
 const avatarPlaceholder = { fontSize: '60px', color: 'var(--accent)', fontWeight: 'bold' };
@@ -385,7 +393,7 @@ const statValue = { fontSize: '24px', fontWeight: 'bold', color: 'var(--text-mai
 const statLabel = { fontSize: '11px', fontWeight: 'bold', color: 'var(--accent)', textTransform: 'uppercase', marginTop: '8px' };
 const subLabel = { fontSize: '10px', fontWeight: 'bold', color: 'var(--accent)', textTransform: 'uppercase', display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: '5px' };
 
-const bottomSection = { backgroundColor: 'var(--card-bg)', borderRadius: '15px', padding: '30px', boxShadow: '0 8px 20px rgba(0,0,0,0.05)' };
+const bottomSection = { backgroundColor: 'var(--card-bg)', borderRadius: '15px', padding: '30px', boxShadow: '0 8px 20px rgba(0,0,0,0.05)', border: '1px solid var(--border-color)' };
 const tabsHeader = { display: 'flex', gap: '30px', borderBottom: '2px solid var(--border-color)', paddingBottom: '15px', marginBottom: '25px' };
 const tab = { display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-muted)', cursor: 'pointer', fontWeight: '500', paddingBottom: '13px', borderBottom: '3px solid transparent' };
 const activeTab = { ...tab, color: 'var(--accent)', borderBottom: '3px solid var(--accent)', fontWeight: 'bold' };
@@ -400,7 +408,7 @@ const actionIconsContainer = { display: 'flex', gap: '10px', marginLeft: 'auto' 
 const iconBtnStyle = { background: 'var(--bg-color)', border: 'none', borderRadius: '8px', padding: '10px', cursor: 'pointer', color: 'var(--text-muted)' };
 
 const overlayStyle = { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0, 0, 0, 0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000 };
-const modalContent = { backgroundColor: 'var(--card-bg)', padding: '30px', borderRadius: '16px', width: '450px', maxWidth: '95%', maxHeight: '80vh', position: 'relative', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 40px rgba(0,0,0,0.1)' };
+const modalContent = { backgroundColor: 'var(--card-bg)', padding: '30px', borderRadius: '16px', width: '450px', maxWidth: '95%', maxHeight: '80vh', position: 'relative', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 40px rgba(0,0,0,0.1)', border: '1px solid var(--border-color)' };
 const closeBtnStyle = { position: 'absolute', top: '15px', right: '15px', border: 'none', background: 'none', fontSize: '18px', cursor: 'pointer', color: 'var(--text-muted)' };
 const modalHeader = { borderBottom: '1px solid var(--border-color)', paddingBottom: '15px', marginBottom: '15px' };
 const modalBody = { overflowY: 'auto', flex: 1 };

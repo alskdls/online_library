@@ -1,11 +1,12 @@
 import './App.css';
 import React, { useState, useEffect } from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, useLocation } from 'react-router-dom';
 import io from 'socket.io-client';
 
 import Header from './components/Header';
 import Footer from './components/Footer';
 import Sidebar from './components/Sidebar';
+import RightSidebar from './components/RightSidebar'; 
 import BookList from './components/BookList';
 import Home from './components/Home';
 import Login from './components/Login';
@@ -21,6 +22,7 @@ import Settings from './components/Settings';
 const socket = io('http://localhost:5000');
 
 function App() {
+  const location = useLocation();
   const [selectedGenreId, setSelectedGenreId] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [extraFilters, setExtraFilters] = useState(null);
@@ -30,12 +32,25 @@ function App() {
     return localStorage.getItem('theme') === 'dark';
   });
 
+  const isHomePage = location.pathname === '/';
+
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
     if (storedUser) {
       const user = JSON.parse(storedUser);
       socket.emit('user_online', user.id);
     }
+
+    // 1. Устанавливаем тему
+    document.documentElement.setAttribute('data-theme', isDarkMode ? 'dark' : 'light');
+
+    // 2. ФИКС: Берем цвет фона из CSS переменных, чтобы не гадать с оттенком
+    // Используем getComputedStyle, чтобы вытянуть именно твой цвет из CSS
+    const rootStyles = getComputedStyle(document.documentElement);
+    const themeBg = rootStyles.getPropertyValue('--bg-main').trim() || (isDarkMode ? '#121212' : '#fdfcf0');
+
+    document.documentElement.style.backgroundColor = themeBg;
+    document.body.style.backgroundColor = themeBg;
 
     if (isDarkMode) {
       document.body.classList.add('dark-theme');
@@ -95,20 +110,26 @@ function App() {
             <Route path="/settings" element={<Settings />} />
           </Routes>
         </main>
+
+        {isHomePage && <RightSidebar />}
       </div>
       
       <Footer />
 
       <style>
         {`
+          html, body {
+            margin: 0;
+            padding: 0;
+            min-height: 100%;
+          }
+
+          @media (max-width: 1100px) {
+            .right-sidebar-container { display: none !important; }
+          }
           @media (max-width: 768px) {
-            .main-layout {
-              flex-direction: column;
-            }
-            .content-area {
-              padding: 10px !important;
-              margin-left: 0 !important;
-            }
+            .main-layout { flex-direction: column; }
+            .content-area { padding: 10px !important; margin-left: 0 !important; }
           }
         `}
       </style>
@@ -120,8 +141,9 @@ const appStyle = {
   display: 'flex', 
   flexDirection: 'column', 
   minHeight: '100vh',
-  backgroundColor: 'var(--bg-color)',
-  color: 'var(--text-main)'
+  backgroundColor: 'var(--bg-main)', // Возвращаем твою переменную фона
+  color: 'var(--text-main)',
+  width: '100%'
 };
 
 const mainLayoutStyle = { 
@@ -129,13 +151,14 @@ const mainLayoutStyle = {
   flex: 1,
   alignItems: 'stretch',
   gap: '0',
-  position: 'relative'
+  position: 'relative',
+  width: '100%'
 };
 
 const contentAreaStyle = { 
   flex: 1, 
   padding: '20px 20px 0 20px', 
-  backgroundColor: 'var(--bg-color)',
+  backgroundColor: 'transparent',
   minWidth: 0 
 };
 

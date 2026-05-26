@@ -10,8 +10,23 @@ const BookDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   
-  const [isDarkMode, setIsDarkMode] = useState(localStorage.getItem('theme') === 'dark');
-  
+  const [themeMode, setThemeMode] = useState(localStorage.getItem('theme') || 'light');
+
+  useEffect(() => {
+    const syncTheme = () => {
+      const currentTheme = localStorage.getItem('theme') || 'light';
+      if (currentTheme !== themeMode) setThemeMode(currentTheme);
+    };
+    const interval = setInterval(syncTheme, 100);
+    window.addEventListener('storage', syncTheme);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('storage', syncTheme);
+    };
+  }, [themeMode]);
+
+  const isDarkMode = themeMode === 'dark';
+
   const [book, setBook] = useState(null);
   const [isFavorite, setIsFavorite] = useState(false);
   const [ratingData, setRatingData] = useState({ average_rating: 0, total_votes: 0 });
@@ -27,18 +42,6 @@ const BookDetail = () => {
   const { Toolbar } = toolbarPluginInstance;
   const user = JSON.parse(localStorage.getItem('user'));
   const bookIdNum = parseInt(id);
-
-  const toggleTheme = () => {
-    const newTheme = !isDarkMode;
-    setIsDarkMode(newTheme);
-    localStorage.setItem('theme', newTheme ? 'dark' : 'light');
-  };
-
-  const formatDate = (dateString) => {
-    if (!dateString) return "щойно";
-    const options = { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' };
-    return new Date(dateString).toLocaleDateString('uk-UA', options);
-  };
 
   const fetchData = async () => {
     try {
@@ -141,18 +144,17 @@ const BookDetail = () => {
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
   );
 
-  if (!book) return <div style={{textAlign: 'center', padding: '100px', color: isDarkMode ? '#fff' : '#000'}}>Завантаження...</div>;
+  if (!book) return null;
 
   const cover = (book.image_url && book.image_url !== "[null]" && book.image_url.trim() !== "") ? book.image_url : "https://kappa.lol/pAubra";
   const isButtonActive = userRating > 0 && comment.trim().length > 0 && cooldown === 0;
   const isFileContent = book.content && book.content.startsWith('/uploads/');
 
   return (
-    <div className={`page-wrapper ${isDarkMode ? 'dark' : 'light'}`} style={pageWrapper}>
+    /* БАЗА КАК В HOME.JS: Используем padding и maxWidth напрямую, без лишних оберток */
+    <div style={{ padding: '40px 20px', maxWidth: '1400px', margin: '0 auto', color: 'var(--text-main)' }}>
       <style>{`
         :root {
-          --bg-color: ${isDarkMode ? '#1a1a1a' : '#f5f5f5'};
-          --card-bg: ${isDarkMode ? '#242424' : '#ffffff'};
           --text-main: ${isDarkMode ? '#e0e0e0' : '#2c1e1a'};
           --text-muted: ${isDarkMode ? '#a0a0a0' : '#8d6e63'};
           --border-color: ${isDarkMode ? '#333' : '#eee'};
@@ -160,144 +162,145 @@ const BookDetail = () => {
           --secondary-brown: ${isDarkMode ? '#7f5539' : '#8d6e63'};
           --input-bg: ${isDarkMode ? '#2d2d2d' : '#fff'};
         }
-        .page-wrapper { background-color: var(--bg-color); transition: 0.3s; }
-        .main-container { background-color: var(--card-bg); color: var(--text-main); }
-        @keyframes fadeIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
+        * { transition: none !important; }
       `}</style>
 
-      <div className="main-container" style={containerStyle}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
-          <button onClick={() => navigate(-1)} style={backBtnStyle}>← Назад до каталогу</button>
-          <button onClick={toggleTheme} style={themeToggleBtn}>
-            {isDarkMode ? '☀️ Світла тема' : '🌙 Темна тема'}
+      <div style={{ marginBottom: '30px' }}>
+        <button onClick={() => navigate(-1)} style={backBtnStyle}>← Назад до каталогу</button>
+      </div>
+
+      <div style={topSection}>
+        <div style={imageSide}>
+          <img src={cover} alt={book.title} style={mainImage} />
+          <div style={{...statusPanelSide, backgroundColor: isDarkMode ? '#242424' : '#f8f9fa', border: `1px solid var(--border-color)`}}>
+             {['completed', 'reading', 'planned', 'dropped'].map(status => (
+               <button key={status} onClick={() => handleStatusChange(status)} style={statusBtnStyle(status === 'completed' ? '#27ae60' : status === 'reading' ? '#3498db' : status === 'planned' ? '#f39c12' : '#e74c3c', currentStatus === status, isDarkMode)}>
+                  {currentStatus === status && <CheckIcon />} {status === 'completed' ? 'Прочитано' : status === 'reading' ? 'Читаю' : status === 'planned' ? 'У плани' : 'Кинуто'}
+               </button>
+             ))}
+          </div>
+        </div>
+
+        <div style={infoSide}>
+          <h1 style={{...bookTitle, color: 'var(--text-main)'}}>{book.title}</h1>
+          <h2 style={{...bookSubtitle, color: 'var(--text-muted)'}}>{book.author}</h2>
+          
+          <div style={{...ratingContainer, backgroundColor: isDarkMode ? '#242424' : '#f9f9f9', border: `1px solid var(--border-color)`}}>
+              <div style={{ display: 'flex', gap: '5px' }}>
+                  {[1, 2, 3, 4, 5].map((star) => (
+                      <span key={star} onClick={() => handleStarClick(star)} style={{ 
+                          cursor: 'pointer', color: star <= (userRating || Math.round(ratingData.average_rating)) ? '#f1c40f' : '#ccc', fontSize: '28px'
+                      }}>★</span>
+                  ))}
+              </div>
+              <div style={{marginLeft: '10px'}}>
+                  <span style={ratingValue}>{ratingData.average_rating} / 5</span>
+                  <div style={{...votesCount, color: 'var(--text-muted)'}}>{ratingData.total_votes} голосів</div>
+              </div>
+          </div>
+
+          <div style={specsTable}>
+            <div style={specRow}><span style={{...specLabel, color: 'var(--text-muted)'}}>Жанр:</span> <span style={specValue}>{book.genre_name}</span></div>
+            <div style={specRow}><span style={{...specLabel, color: 'var(--text-muted)'}}>Рік:</span> <span style={specValue}>{book.year || '—'}</span></div>
+            <div style={specRow}><span style={{...specLabel, color: 'var(--text-muted)'}}>Сторінок:</span> <span style={specValue}>{book.pages || '—'}</span></div>
+          </div>
+
+          <div style={{ display: 'flex', gap: '15px' }}>
+              <button onClick={() => document.getElementById('reader-section')?.scrollIntoView({ behavior: 'auto' })} style={{...readActionBtn, backgroundColor: 'var(--accent-brown)'}}>ЧИТАТИ ОНЛАЙН 📖</button>
+              <button onClick={handleFavoriteClick} style={favoriteBtn(isFavorite, isDarkMode)}>{isFavorite ? '★ У СПИСКУ' : '☆ В ОБРАНЕ'}</button>
+          </div>
+        </div>
+      </div>
+
+      <div style={descriptionSection}>
+        <h3 style={{...sectionHeader, borderBottomColor: 'var(--accent-brown)'}}>Анотація</h3>
+        <div style={descriptionText}>{book.description}</div>
+      </div>
+
+      <div id="reader-section" style={{ marginTop: '50px' }}>
+          <h3 style={{...sectionHeader, borderBottomColor: 'var(--accent-brown)'}}>Читати онлайн</h3>
+          {book.content ? (
+              isFileContent ? (
+                <div style={{...professionalReaderWrapper, backgroundColor: isDarkMode ? '#242424' : '#333'}}>
+                  <Worker workerUrl="https://unpkg.com/pdfjs-dist@3.4.120/build/pdf.worker.min.js">
+                    <div style={{...readerLayout, backgroundColor: isDarkMode ? '#1a1a1a' : '#fff'}}>
+                      <div style={{...readerToolbar, backgroundColor: isDarkMode ? '#242424' : '#f9f9f9', borderBottomColor: 'var(--border-color)'}}>
+                        <Toolbar />
+                      </div>
+                      <div style={{ flex: 1, overflow: 'hidden', filter: isDarkMode ? 'invert(0.9) hue-rotate(180deg)' : 'none' }}>
+                        <Viewer fileUrl={`http://localhost:5000${book.content}`} theme={isDarkMode ? 'dark' : 'light'} />
+                      </div>
+                    </div>
+                  </Worker>
+                </div>
+              ) : <div style={{...readerBoxStyle, backgroundColor: 'var(--input-bg)', borderColor: 'var(--border-color)'}}>{book.content}</div>
+          ) : <div style={bookPlaceholder}>Контент відсутній...</div>}
+      </div>
+
+      <div style={{...bottomActionsBar, borderTopColor: 'var(--border-color)'}}>
+        <div style={bookReactionContainerBottom}>
+          <button onClick={() => handleBookReaction('like')} style={bookReactionBtn(bookReactions.userReaction === 'like', '#27ae60', isDarkMode)}>
+            <LikeIcon size={18} color={bookReactions.userReaction === 'like' ? '#27ae60' : (isDarkMode ? '#aaa' : '#555')} />
+            <span style={{marginLeft: '8px'}}>{bookReactions.likes}</span>
+          </button>
+          <button onClick={() => handleBookReaction('dislike')} style={bookReactionBtn(bookReactions.userReaction === 'dislike', '#e74c3c', isDarkMode)}>
+            <DislikeIcon size={18} color={bookReactions.userReaction === 'dislike' ? '#e74c3c' : (isDarkMode ? '#aaa' : '#555')} />
+            <span style={{marginLeft: '8px'}}>{bookReactions.dislikes}</span>
           </button>
         </div>
+      </div>
 
-        <div style={topSection}>
-          <div style={imageSide}>
-            <img src={cover} alt={book.title} style={mainImage} />
-            <div style={{...statusPanelSide, backgroundColor: isDarkMode ? '#2d2d2d' : '#f8f9fa'}}>
-               {['completed', 'reading', 'planned', 'dropped'].map(status => (
-                 <button key={status} onClick={() => handleStatusChange(status)} style={statusBtnStyle(status === 'completed' ? '#27ae60' : status === 'reading' ? '#3498db' : status === 'planned' ? '#f39c12' : '#e74c3c', currentStatus === status, isDarkMode)}>
-                    {currentStatus === status && <CheckIcon />} {status === 'completed' ? 'Прочитано' : status === 'reading' ? 'Читаю' : status === 'planned' ? 'У плани' : 'Кинуто'}
-                 </button>
-               ))}
-            </div>
-          </div>
+      <div style={commentsSection}>
+          <h3 style={sectionHeader}>Відгуки</h3>
+          {user ? (
+              <div style={commentForm}>
+                  {replyTo && <div style={{...replyStatusStyle, backgroundColor: isDarkMode ? '#332a28' : '#f3ecea'}}>Відповідь для: {allReviews.find(r => r.id === replyTo)?.username} <button onClick={() => setReplyTo(null)}>X</button></div>}
+                  <textarea id="comment-textarea" placeholder="Ваш відгук..." value={comment} onChange={(e) => setComment(e.target.value)} style={{...textAreaStyle, backgroundColor: 'var(--input-bg)', color: 'var(--text-main)', borderColor: 'var(--border-color)'}} />
+                  <button onClick={handlePostComment} disabled={!isButtonActive} style={{...sendCommentBtn, backgroundColor: isButtonActive ? 'var(--accent-brown)' : '#ccc'}}>
+                    {cooldown > 0 ? `ПАУЗА ${cooldown}с` : (replyTo ? 'ВІДПОВІСТИ' : 'ДОДАТИ КОМЕНТАР')}
+                  </button>
+              </div>
+          ) : <p>Увійдіть для відгуку.</p>}
 
-          <div style={infoSide}>
-            <h1 style={{...bookTitle, color: 'var(--text-main)'}}>{book.title}</h1>
-            <h2 style={{...bookSubtitle, color: 'var(--text-muted)'}}>{book.author}</h2>
-            <div style={{...ratingContainer, backgroundColor: isDarkMode ? '#2d2d2d' : '#f9f9f9'}}>
-                <div style={{ display: 'flex', gap: '5px' }}>
-                    {[1, 2, 3, 4, 5].map((star) => (
-                        <span key={star} onClick={() => handleStarClick(star)} style={{ 
-                            cursor: 'pointer', color: star <= (userRating || Math.round(ratingData.average_rating)) ? '#f1c40f' : '#ccc', fontSize: '28px'
-                        }}>★</span>
-                    ))}
-                </div>
-                <div style={{marginLeft: '10px'}}>
-                    <span style={ratingValue}>{ratingData.average_rating} / 5</span>
-                    <div style={{...votesCount, color: 'var(--text-muted)'}}>{ratingData.total_votes} голосів</div>
-                </div>
-            </div>
-            <div style={specsTable}>
-              <div style={specRow}><span style={{...specLabel, color: 'var(--text-muted)'}}>Жанр:</span> <span style={specValue}>{book.genre_name}</span></div>
-              <div style={specRow}><span style={{...specLabel, color: 'var(--text-muted)'}}>Рік:</span> <span style={specValue}>{book.year || '—'}</span></div>
-              <div style={specRow}><span style={{...specLabel, color: 'var(--text-muted)'}}>Сторінок:</span> <span style={specValue}>{book.pages || '—'}</span></div>
-            </div>
-            <div style={{ display: 'flex', gap: '15px' }}>
-                <button onClick={() => document.getElementById('reader-section')?.scrollIntoView({ behavior: 'smooth' })} style={{...readActionBtn, backgroundColor: 'var(--accent-brown)'}}>ЧИТАТИ ОНЛАЙН 📖</button>
-                <button onClick={handleFavoriteClick} style={favoriteBtn(isFavorite, isDarkMode)}>{isFavorite ? '★ У СПИСКУ' : '☆ В ОБРАНЕ'}</button>
-            </div>
-          </div>
-        </div>
-
-        <div style={descriptionSection}>
-          <h3 style={{...sectionHeader, borderBottomColor: 'var(--accent-brown)'}}>Анотація</h3>
-          <div style={descriptionText}>{book.description}</div>
-        </div>
-
-        <div id="reader-section" style={{ marginTop: '50px' }}>
-            <h3 style={{...sectionHeader, borderBottomColor: 'var(--accent-brown)'}}>Читати онлайн</h3>
-            {book.content ? (
-                isFileContent ? (
-                  <div style={professionalReaderWrapper}>
-                    <Worker workerUrl="https://unpkg.com/pdfjs-dist@3.4.120/build/pdf.worker.min.js">
-                      <div style={{...readerLayout, backgroundColor: isDarkMode ? '#333' : '#fff'}}>
-                        <div style={{...readerToolbar, backgroundColor: isDarkMode ? '#222' : '#f9f9f9', borderBottomColor: 'var(--border-color)'}}>
-                          <Toolbar />
-                        </div>
-                        <div style={{ flex: 1, overflow: 'hidden', filter: isDarkMode ? 'invert(0.9) hue-rotate(180deg)' : 'none' }}>
-                          <Viewer fileUrl={`http://localhost:5000${book.content}`} theme={isDarkMode ? 'dark' : 'light'} />
-                        </div>
+          <div style={{ marginTop: '30px', paddingBottom: '60px' }}>
+              {allReviews.filter(rev => rev.comment && !rev.parent_id).map((rev) => (
+                  <div key={rev.id} style={{ marginBottom: '25px', borderBottom: `1px solid var(--border-color)` }}>
+                      <div style={commentCard}>
+                          <div style={{...commentAvatar, backgroundColor: 'var(--accent-brown)'}}>{rev.username[0]}</div>
+                          <div style={{ flex: 1 }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                  <span style={commentUser}>{rev.username} <span style={starsLabel}>{'★'.repeat(rev.rating)}</span></span>
+                                  <div style={{...reactionWrapper, backgroundColor: isDarkMode ? '#242424' : '#f0f2f5', border: `1px solid var(--border-color)`}}>
+                                    <button onClick={() => handleReaction(rev.id, 'like')} style={reactionBtnStyle}><LikeIcon size={14}/> {rev.likes_count}</button>
+                                    <button onClick={() => handleReaction(rev.id, 'dislike')} style={reactionBtnStyle}><DislikeIcon size={14}/> {rev.dislikes_count}</button>
+                                  </div>
+                              </div>
+                              <p style={commentText}>{rev.comment}</p>
+                              <button onClick={() => handleQuote(rev.username, rev.comment)} style={smallActionLink}>Цитата</button>
+                              {allReviews.filter(reply => reply.parent_id === rev.id).map(reply => (
+                                  <div key={reply.id} style={{marginLeft: '40px', marginTop: '15px', paddingLeft: '15px', borderLeft: '2px solid var(--border-color)'}}>
+                                      <span style={commentUser}>{reply.username}</span>
+                                      <p style={commentText}>{reply.comment}</p>
+                                  </div>
+                              ))}
+                              <button onClick={() => setReplyTo(rev.id)} style={{...smallActionLink, marginLeft: '10px'}}>Відповісти</button>
+                          </div>
                       </div>
-                    </Worker>
                   </div>
-                ) : <div style={{...readerBoxStyle, backgroundColor: 'var(--input-bg)', borderColor: 'var(--border-color)'}}>{book.content}</div>
-            ) : <div style={bookPlaceholder}>Контент відсутній...</div>}
-        </div>
-
-        <div style={{...bottomActionsBar, borderTopColor: 'var(--border-color)'}}>
-          <div style={bookReactionContainerBottom}>
-            <button onClick={() => handleBookReaction('like')} style={bookReactionBtn(bookReactions.userReaction === 'like', '#27ae60', isDarkMode)}>
-              <LikeIcon size={18} color={bookReactions.userReaction === 'like' ? '#27ae60' : (isDarkMode ? '#aaa' : '#555')} />
-              <span style={{marginLeft: '8px'}}>{bookReactions.likes}</span>
-            </button>
-            <button onClick={() => handleBookReaction('dislike')} style={bookReactionBtn(bookReactions.userReaction === 'dislike', '#e74c3c', isDarkMode)}>
-              <DislikeIcon size={18} color={bookReactions.userReaction === 'dislike' ? '#e74c3c' : (isDarkMode ? '#aaa' : '#555')} />
-              <span style={{marginLeft: '8px'}}>{bookReactions.dislikes}</span>
-            </button>
+              ))}
           </div>
-        </div>
-
-        <div style={commentsSection}>
-            <h3 style={sectionHeader}>Відгуки</h3>
-            {user ? (
-                <div style={commentForm}>
-                    {replyTo && <div style={{...replyStatusStyle, backgroundColor: isDarkMode ? '#332a28' : '#f3ecea'}}>Відповідь для: {allReviews.find(r => r.id === replyTo)?.username} <button onClick={() => setReplyTo(null)}>X</button></div>}
-                    <textarea id="comment-textarea" placeholder="Ваш відгук..." value={comment} onChange={(e) => setComment(e.target.value)} style={{...textAreaStyle, backgroundColor: 'var(--input-bg)', color: 'var(--text-main)', borderColor: 'var(--border-color)'}} />
-                    <button onClick={handlePostComment} disabled={!isButtonActive} style={{...sendCommentBtn, backgroundColor: isButtonActive ? 'var(--accent-brown)' : '#ccc'}}>
-                      {cooldown > 0 ? `ПАУЗА ${cooldown}с` : (replyTo ? 'ВІДПОВІСТИ' : 'ДОДАТИ КОМЕНТАР')}
-                    </button>
-                </div>
-            ) : <p>Увійдіть для відгуку.</p>}
-
-            <div style={{ marginTop: '30px' }}>
-                {allReviews.filter(rev => rev.comment && !rev.parent_id).map((rev) => (
-                    <div key={rev.id} style={{ marginBottom: '25px', borderBottom: `1px solid var(--border-color)` }}>
-                        <div style={commentCard}>
-                            <div style={{...commentAvatar, backgroundColor: 'var(--accent-brown)'}}>{rev.username[0]}</div>
-                            <div style={{ flex: 1 }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                    <span style={commentUser}>{rev.username} <span style={starsLabel}>{'★'.repeat(rev.rating)}</span></span>
-                                    <div style={{...reactionWrapper, backgroundColor: isDarkMode ? '#333' : '#f0f2f5'}}>
-                                      <button onClick={() => handleReaction(rev.id, 'like')} style={reactionBtnStyle}><LikeIcon size={14}/> {rev.likes_count}</button>
-                                      <button onClick={() => handleReaction(rev.id, 'dislike')} style={reactionBtnStyle}><DislikeIcon size={14}/> {rev.dislikes_count}</button>
-                                    </div>
-                                </div>
-                                <p style={commentText}>{rev.comment}</p>
-                                <button onClick={() => handleQuote(rev.username, rev.comment)} style={smallActionLink}>Цитата</button>
-                            </div>
-                        </div>
-                    </div>
-                ))}
-            </div>
-        </div>
       </div>
     </div>
   );
 };
 
-const pageWrapper = { minHeight: '100vh', padding: '40px 20px' };
-const containerStyle = { maxWidth: '1000px', margin: '0 auto', padding: '40px', borderRadius: '12px', boxShadow: '0 4px 20px rgba(0,0,0,0.2)', transition: '0.3s' };
+// Стили обновлены под "базу" Home.js
 const backBtnStyle = { background: 'none', border: 'none', color: 'var(--secondary-brown)', cursor: 'pointer', fontSize: '16px' };
-const themeToggleBtn = { padding: '8px 16px', borderRadius: '20px', border: '1px solid var(--border-color)', backgroundColor: 'var(--input-bg)', color: 'var(--text-main)', cursor: 'pointer' };
 const topSection = { display: 'flex', gap: '50px', marginBottom: '40px', flexWrap: 'wrap' };
 const imageSide = { flex: '0 0 280px' };
 const mainImage = { width: '100%', borderRadius: '8px', boxShadow: '0 8px 25px rgba(0,0,0,0.3)' };
 const infoSide = { flex: '1', textAlign: 'left' };
-const bookTitle = { fontSize: '34px', margin: '0' };
+const bookTitle = { fontSize: '34px', margin: '0', fontWeight: 'bold' };
 const bookSubtitle = { fontSize: '19px', margin: '5px 0 20px 0' };
 const ratingContainer = { display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px', padding: '12px', borderRadius: '8px' };
 const specsTable = { display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '30px' };
@@ -306,17 +309,17 @@ const specLabel = { width: '120px', fontWeight: '500' };
 const specValue = { fontWeight: '400' };
 const readActionBtn = { color: '#fff', border: 'none', padding: '15px 30px', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' };
 const favoriteBtn = (active, dark) => ({ backgroundColor: active ? 'var(--secondary-brown)' : 'transparent', color: active ? '#fff' : 'var(--secondary-brown)', border: '2px solid var(--secondary-brown)', padding: '13px 25px', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' });
-const sectionHeader = { fontSize: '22px', borderBottom: '2px solid', width: 'fit-content', paddingBottom: '5px', marginBottom: '20px' };
+const sectionHeader = { fontSize: '22px', borderBottom: '2px solid', width: 'fit-content', paddingBottom: '5px', marginBottom: '20px', textTransform: 'uppercase' };
 const descriptionSection = { marginTop: '40px' };
 const descriptionText = { lineHeight: '1.7', whiteSpace: 'pre-wrap', textAlign: 'left' };
-const professionalReaderWrapper = { borderRadius: '12px', padding: '10px', marginTop: '20px', backgroundColor: '#333' };
+const professionalReaderWrapper = { borderRadius: '12px', padding: '10px', marginTop: '20px' };
 const readerLayout = { display: 'flex', flexDirection: 'column', height: '800px', borderRadius: '12px', overflow: 'hidden' };
 const readerToolbar = { borderBottom: '1px solid', padding: '5px 10px' };
 const readerBoxStyle = { padding: '30px', borderRadius: '10px', border: '1px solid', lineHeight: '1.8', fontSize: '18px', textAlign: 'left', whiteSpace: 'pre-wrap', maxHeight: '600px', overflowY: 'auto' };
 const commentsSection = { marginTop: '50px' };
 const commentForm = { display: 'flex', flexDirection: 'column', gap: '10px' };
 const textAreaStyle = { width: '100%', padding: '15px', borderRadius: '8px', border: '1px solid', minHeight: '120px', boxSizing: 'border-box' };
-const sendCommentBtn = { padding: '12px 28px', color: '#fff', border: 'none', borderRadius: '4px', fontWeight: 'bold' };
+const sendCommentBtn = { padding: '12px 28px', color: '#fff', border: 'none', borderRadius: '4px', fontWeight: 'bold', cursor: 'pointer' };
 const commentCard = { display: 'flex', gap: '15px', padding: '20px 0' };
 const commentAvatar = { width: '45px', height: '45px', color: '#fff', borderRadius: '50%', display: 'flex', justifyContent: 'center', alignItems: 'center', fontWeight: 'bold' };
 const commentUser = { fontWeight: 'bold' };
@@ -330,7 +333,7 @@ const statusPanelSide = { marginTop: '20px', display: 'flex', flexDirection: 'co
 const statusBtnStyle = (color, isActive, dark) => ({
   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '10px', border: 'none', borderRadius: '6px',
   cursor: 'pointer', fontSize: '14px', fontWeight: '600',
-  backgroundColor: isActive ? color : (dark ? '#3d3d3d' : '#fff'), color: isActive ? '#fff' : (dark ? '#bbb' : '#555'),
+  backgroundColor: isActive ? color : (dark ? '#333' : '#fff'), color: isActive ? '#fff' : (dark ? '#bbb' : '#555'),
 });
 const bottomActionsBar = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '15px', padding: '15px 10px 0', borderTop: '1px solid' };
 const bookReactionContainerBottom = { display: 'flex', gap: '12px' };

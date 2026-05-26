@@ -37,7 +37,10 @@ const Login = ({ socket }) => {
   };
 
   return (
-    <div style={authPageWrapper}>
+    <div style={{...authPageWrapper, backgroundColor: 'transparent'}}>
+      <style>{`
+        body { transition: none !important; }
+      `}</style>
       <div style={formContainerStyle}>
         <h3 style={headerStyle}>Вхід у систему</h3>
         <form onSubmit={handleLogin}>
@@ -61,44 +64,46 @@ const Login = ({ socket }) => {
   );
 };
 
+// --- Стили с исправлением прозрачности ---
 const authPageWrapper = {
   display: 'flex',
   justifyContent: 'center',
   alignItems: 'center',
-  minHeight: '80vh',
-  backgroundColor: 'var(--bg-color)',
-  transition: 'background-color 0.3s ease'
+  minHeight: 'calc(100vh - 80px)', // Учитываем высоту хедера, если он есть
+  padding: '20px'
 };
 
 const formContainerStyle = {
   width: '100%',
   maxWidth: '350px',
   padding: '40px',
-  borderRadius: '12px',
+  borderRadius: '16px', // Немного увеличил скругление для соответствия общему стилю
   backgroundColor: 'var(--card-bg)',
-  boxShadow: '0 8px 24px rgba(0,0,0,0.1)',
+  boxShadow: '0 10px 30px rgba(0,0,0,0.1)',
   border: '1px solid var(--border-color)',
-  transition: 'all 0.3s ease'
+  transition: 'transform 0.3s ease'
 };
 
 const headerStyle = {
   textAlign: 'center',
   marginBottom: '25px',
   color: 'var(--text-main)',
-  fontSize: '24px'
+  fontSize: '24px',
+  fontWeight: 'bold'
 };
 
 const inputStyle = {
   width: '100%',
-  padding: '12px',
+  padding: '12px 16px',
   marginBottom: '15px',
-  borderRadius: '6px',
+  borderRadius: '8px',
   border: '1px solid var(--border-color)',
   boxSizing: 'border-box',
   fontSize: '16px',
   backgroundColor: 'var(--bg-color)',
   color: 'var(--text-main)',
-  outline: 'none'
+  outline: 'none',
+  transition: 'border-color 0.2s'
 };
 
 const buttonStyle = {
@@ -107,7 +112,7 @@ const buttonStyle = {
   backgroundColor: 'var(--accent)',
   color: 'white',
   border: 'none',
-  borderRadius: '6px',
+  borderRadius: '8px',
   cursor: 'pointer',
   fontSize: '16px',
   fontWeight: 'bold',

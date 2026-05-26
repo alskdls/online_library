@@ -1,32 +1,39 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios'; 
 import { LayoutGrid, Sparkles, Trophy, Shuffle, PlusCircle, User as UserIcon, X } from 'lucide-react';
 
 const Sidebar = ({ onApplyFilters, isDarkMode, toggleTheme, isOpen, onClose }) => {
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem('user'));
 
-  const handleQuickFilter = (type) => {
-    const currentYear = new Date().getFullYear();
-    let filters = {
-      selectedGenres: [],
-      selectedAuthors: [],
-      priceRange: { min: '', max: '' },
-      selectedYears: { from: '', to: '' },
-      pageFilter: '',
-      onlyWithImages: false
-    };
-
-    if (type === 'new') {
-      filters.selectedYears = { from: (currentYear - 1).toString(), to: currentYear.toString() };
-    }
-    onApplyFilters(filters);
+  // ИСПРАВЛЕННАЯ ЛОГИКА ДЛЯ НОВИНОК
+  const handleGoToNew = () => {
+    navigate('/search?sort=new');
     if (window.innerWidth <= 768) onClose();
   };
 
   const menuClick = (path) => {
     navigate(path);
     if (window.innerWidth <= 768) onClose();
+  };
+
+  const handleRandomBook = async () => {
+    try {
+      const res = await axios.get('http://localhost:5000/books');
+      const books = res.data;
+      
+      if (books && books.length > 0) {
+        const randomIndex = Math.floor(Math.random() * books.length);
+        const randomBookId = books[randomIndex].id;
+        menuClick(`/book/${randomBookId}`);
+      } else {
+        alert("Книг поки що немає");
+      }
+    } catch (err) {
+      console.error("Помилка при пошуку рандомної книги:", err);
+      alert("Не вдалося завантажити список книг");
+    }
   };
 
   return (
@@ -53,7 +60,6 @@ const Sidebar = ({ onApplyFilters, isDarkMode, toggleTheme, isOpen, onClose }) =
           border-right: 1px solid rgba(255, 255, 255, 0.05);
         }
 
-        /* Прячем мобильную шапку на десктопе */
         .mobile-sidebar-header {
           display: none; 
         }
@@ -103,12 +109,10 @@ const Sidebar = ({ onApplyFilters, isDarkMode, toggleTheme, isOpen, onClose }) =
         .action-btn:hover { opacity: 0.9; }
       `}</style>
 
-      {/* Оверлей только для мобилок */}
       <div className="sidebar-overlay" onClick={onClose} />
 
       <aside className="sidebar-aside" style={sidebarContainerStyle}>
         
-        {/* Появится только на мобилках */}
         <div className="mobile-sidebar-header">
            <span style={{fontWeight: 'bold', fontSize: '14px'}}>МЕНЮ</span>
            <X size={22} onClick={onClose} style={{ cursor: 'pointer' }} />
@@ -118,10 +122,13 @@ const Sidebar = ({ onApplyFilters, isDarkMode, toggleTheme, isOpen, onClose }) =
           <div className="sidebar-item" onClick={() => menuClick('/')}>
             <LayoutGrid size={18} /> Головна
           </div>
-          <div className="sidebar-item" onClick={() => handleQuickFilter('new')}>
+          
+          {/* ИСПРАВЛЕННАЯ КНОПКА НОВИНКИ */}
+          <div className="sidebar-item" onClick={handleGoToNew}>
             <Sparkles size={18} /> Новинки
           </div>
-          <div className="sidebar-item" onClick={() => handleQuickFilter('top')}>
+
+          <div className="sidebar-item" onClick={() => menuClick('/search?sort=top')}>
             <Trophy size={18} /> Топ книги
           </div>
           <div className="sidebar-item" onClick={() => menuClick('/recommendations')}>
@@ -130,13 +137,12 @@ const Sidebar = ({ onApplyFilters, isDarkMode, toggleTheme, isOpen, onClose }) =
 
           <div style={{ height: '30px' }}></div>
 
-          <div className="sidebar-item" onClick={() => alert('Шукаємо випадкову книгу...')}>
+          <div className="sidebar-item" onClick={handleRandomBook}>
             <Shuffle size={18} /> Рандомна книга
           </div>
         </div>
 
         <div style={stickyBottomStyle}>
-          {/* Твоя кнопка смены темы */}
           <div style={{ padding: '10px 0' }}>
               <button onClick={toggleTheme} style={themeButtonStyle}>
                   {isDarkMode ? '☀️ Світла тема' : '🌙 Темна тема'}

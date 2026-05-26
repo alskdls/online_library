@@ -100,7 +100,6 @@ const Settings = () => {
     } catch (err) { setMsg({ text: 'Помилка сервера', type: 'error' }); }
   };
 
-  // Динамические стили для алертов
   const alertStyle = {
     ...alert,
     backgroundColor: msg.type === 'success' ? 'var(--card-bg)' : 'rgba(255, 0, 0, 0.1)',
@@ -109,7 +108,12 @@ const Settings = () => {
   };
 
   return (
-    <div style={pageWrapper}>
+    <div style={{...pageWrapper, backgroundColor: 'transparent'}}>
+      {/* Убираем лишние транзиции, чтобы при смене темы фон не "лагал" */}
+      <style>{`
+        body { transition: none !important; }
+      `}</style>
+      
       <div style={container}>
         <div style={headerRow}>
           <button onClick={() => navigate(-1)} style={backBtn}>← Назад</button>
@@ -238,8 +242,8 @@ const Settings = () => {
   );
 };
 
-// --- СТИЛИ С ПОДДЕРЖКОЙ ТЕМЫ ---
-const pageWrapper = { backgroundColor: 'var(--bg-color)', minHeight: '100vh', padding: '40px 20px', transition: 'background-color 0.3s' };
+// --- Стили: pageWrapper теперь прозрачный ---
+const pageWrapper = { minHeight: '100vh', padding: '40px 20px' };
 const container = { maxWidth: '750px', margin: '0 auto' };
 const headerRow = { display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '30px' };
 const mainTitle = { fontSize: '26px', color: 'var(--text-main)', fontWeight: 'bold', margin: 0 };
