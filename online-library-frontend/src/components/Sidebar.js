@@ -7,15 +7,15 @@ const Sidebar = ({ onApplyFilters, isDarkMode, toggleTheme, isOpen, onClose }) =
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem('user'));
 
-  // ИСПРАВЛЕННАЯ ЛОГИКА ДЛЯ НОВИНОК
+  // ИСПРАВЛЕННАЯ ЛОГИКА ДЛЯ НОВИНОК (синхронно с 1100px)
   const handleGoToNew = () => {
     navigate('/search?sort=new');
-    if (window.innerWidth <= 768) onClose();
+    if (window.innerWidth <= 1100) onClose();
   };
 
   const menuClick = (path) => {
     navigate(path);
-    if (window.innerWidth <= 768) onClose();
+    if (window.innerWidth <= 1100) onClose();
   };
 
   const handleRandomBook = async () => {
@@ -64,7 +64,8 @@ const Sidebar = ({ onApplyFilters, isDarkMode, toggleTheme, isOpen, onClose }) =
           display: none; 
         }
 
-        @media (max-width: 768px) {
+        /* ТЕПЕРЬ ПЕРЕКЛЮЧАЕТСЯ СИНХРОННО НА 1100px КАК И ПРАВЫЙ САЙДБАР */
+        @media (max-width: 1100px) {
           .sidebar-aside {
             position: fixed !important;
             z-index: 1001;

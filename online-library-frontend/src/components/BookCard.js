@@ -53,7 +53,22 @@ const BookCard = ({ book, isFavoriteInitial = false }) => {
 
   return (
     <>
-      <div className="book-card" style={cardStyle} onClick={() => navigate(`/book/${book.id}`)}>
+      {/* Добавили глобальный CSS класс для эффекта ховера (так как инлайн-стили hover не умеют) */}
+      <style>{`
+        .book-card-wrapper {
+          transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94), box-shadow 0.3s ease;
+        }
+        .book-card-wrapper:hover {
+          transform: translateY(-6px); /* Твоя анимация поднятия */
+          box-shadow: 0 12px 24px rgba(0,0,0,0.15) !important;
+        }
+      `}</style>
+
+      <div 
+        className="book-card book-card-wrapper" 
+        style={cardStyle} 
+        onClick={() => navigate(`/book/${book.id}`)}
+      >
         <div style={topRowStyle}>
           {user && (
             <button 
@@ -71,7 +86,7 @@ const BookCard = ({ book, isFavoriteInitial = false }) => {
               <>
                 <button onClick={(e) => { e.stopPropagation(); navigate(`/edit-book/${book.id}`); }} style={iconBtnStyle('#f39c12')}>
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
-                </button>
+                </                button>
                 <button onClick={(e) => handleDelete(e, book.id)} style={iconBtnStyle('#e74c3c')}>
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
                 </button>
@@ -124,8 +139,10 @@ const cardStyle = {
   display: 'flex', 
   flexDirection: 'column', 
   border: '1px solid var(--border-color)', 
-  transition: 'all 0.3s ease', 
-  cursor: 'pointer' 
+  cursor: 'pointer',
+  /* ИСПРАВЛЕНО: Добавили margin сверху и снизу карточки, чтобы создать безопасную зону для анимации поднятия */
+  margin: '10px 0',
+  boxSizing: 'border-box'
 };
 
 const topRowStyle = { display: 'flex', justifyContent: 'space-between', marginBottom: '8px', alignItems: 'center', height: '24px' };

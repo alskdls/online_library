@@ -137,7 +137,10 @@ const Header = ({ onSearch, onApplyFilters, socket, onMenuClick }) => {
           .header-logo-text { display: none; }
         }
 
+        /* Кнопка бургера теперь появляется синхронно на 1100px */
         @media (max-width: 1100px) {
+          .mobile-menu-btn { display: flex !important; margin-right: 5px; }
+          
           .username-text { display: none; }
           .user-profile-field { padding: 8px !important; }
           
@@ -164,9 +167,8 @@ const Header = ({ onSearch, onApplyFilters, socket, onMenuClick }) => {
           .header-search-container { max-width: 160px; height: 34px; }
         }
 
+        /* Убрали изменение padding, чтобы шапка не сужалась резко и страница не прыгала */
         @media (max-width: 768px) {
-          .mobile-menu-btn { display: flex !important; margin-right: 5px; }
-          header { padding: 10px !important; }
           .header-search-container { max-width: 140px; }
         }
 
@@ -179,9 +181,10 @@ const Header = ({ onSearch, onApplyFilters, socket, onMenuClick }) => {
   );
 };
 
-const headerStyle = { background: '#2c1e1a', padding: '10px 30px', color: '#f5f5f5', display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 2px 5px rgba(0,0,0,0.1)', position: 'sticky', top: 0, zIndex: 1001, borderBottom: '1px solid rgba(255,255,255,0.05)' };
+/* Подняли zIndex шапки до 1005, чтобы бургер-кнопка оставалась кликабельной поверх оверлея (1000) и шторки меню (1001) */
+const headerStyle = { background: '#2c1e1a', padding: '10px 30px', color: '#f5f5f5', display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 2px 5px rgba(0,0,0,0.1)', position: 'sticky', top: 0, zIndex: 1005, borderBottom: '1px solid rgba(255,255,255,0.05)', height: '60px', boxSizing: 'border-box' };
 const leftSectionStyle = { display: 'flex', alignItems: 'center', gap: '10px' };
-const burgerBtnStyle = { display: 'none', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' };
+const burgerBtnStyle = { display: 'none', alignItems: 'center', justifyItems: 'center', cursor: 'pointer', zIndex: 1006 };
 const logoWrapperStyle = { display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', flexShrink: 0 };
 const logoTextStyle = { fontSize: '18px', fontWeight: '700', color: '#fff', textTransform: 'uppercase', letterSpacing: '1px' };
 const navStyle = { display: 'flex', gap: '5px', alignItems: 'center' };
@@ -190,7 +193,6 @@ const rightSectionStyle = { display: 'flex', alignItems: 'center', gap: '15px', 
 const searchContainerStyle = { backgroundColor: 'rgba(255,255,255,0.07)', borderRadius: '25px', padding: '2px 5px', border: '1px solid rgba(255,255,255,0.15)', display: 'flex', alignItems: 'center', transition: 'all 0.3s ease', overflow: 'hidden', height: '36px' };
 const inputStyle = { flex: 1, padding: '6px 12px', background: 'none', border: 'none', outline: 'none', fontSize: '13px', color: '#fff', width: '100%', minWidth: '40px' };
 
-// Кнопка теперь имеет четкую высоту 28px, чтобы не распирать поиск
 const filterBtnStyle = { background: 'rgba(0, 0, 0, 0.3)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '18px', padding: '0 14px', height: '28px', cursor: 'pointer', fontSize: '11px', color: '#d7ccc8', fontWeight: '600', outline: 'none', flexShrink: 0, display: 'flex', alignItems: 'center', gap: '5px', alignSelf: 'center' };
 
 const userFieldStyle = { display: 'flex', alignItems: 'center', gap: '10px', padding: '6px 15px', borderRadius: '20px', border: '1px solid var(--accent)', cursor: 'pointer', backgroundColor: 'transparent', color: '#f5f5f5', flexShrink: 0 };

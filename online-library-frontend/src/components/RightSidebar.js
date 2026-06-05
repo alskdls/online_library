@@ -33,7 +33,7 @@ const RightSidebar = () => {
         <div className="rs-underline"></div>
       </div>
 
-      {/* СПИСОК — ОСТАЕТСЯ ПО ЛЕВОМУ КРАЮ */}
+      {/* СПИСОК — СТАНОВИТСЯ СКРОЛЛОМ НА МОБИЛКАХ */}
       <div className="right-sidebar-list">
         {latestBooks.map(book => {
           const cover = (book.image_url && book.image_url !== "[null]" && book.image_url.trim() !== "") 
@@ -78,7 +78,6 @@ const RightSidebar = () => {
           position: relative;
         }
 
-        /* Заголовок и линия снова в центре */
         .rs-header-wrapper {
           text-align: center;
           margin-bottom: 25px;
@@ -110,7 +109,7 @@ const RightSidebar = () => {
           height: 4px;
           width: 40px;
           background: var(--accent);
-          margin: 0 auto; /* Линия по центру */
+          margin: 0 auto;
           border-radius: 2px;
         }
 
@@ -155,7 +154,7 @@ const RightSidebar = () => {
           flex-direction: column;
           justify-content: center;
           min-width: 0;
-          text-align: left; /* Текст книг по левому краю */
+          text-align: left;
         }
 
         .rs-item-title {
@@ -193,8 +192,66 @@ const RightSidebar = () => {
           color: var(--accent);
         }
 
+        /* ================= МЕДИА-ЗАПРОС ДЛЯ СМАРТФОНОВ И ПЛАНШЕТОВ ================= */
         @media (max-width: 1100px) {
-          .right-sidebar-container { display: none; }
+          .right-sidebar-container {
+            width: 100%;
+            max-width: 1400px;
+            margin: 0 auto 40px auto; /* Центрируем саму панель по бокам */
+            padding: 20px;
+            background: transparent;  /* Убираем лишний фон, чтобы не дублировать плашки */
+            border: none;             /* Убираем рамку на мобилках */
+            box-shadow: none;         /* Убираем массивную тень */
+            order: -1;                /* Если родитель флекс, кинет новинки НАВЕРХ (сразу после рекомендаций) */
+          }
+
+          /* Перестраиваем список в горизонтальную ленту */
+          .right-sidebar-list {
+            flex-direction: row;
+            overflow-x: auto;
+            overflow-y: hidden;
+            whiteSpace: nowrap;
+            padding-bottom: 15px;
+            gap: 20px;
+            -webkit-overflow-scrolling: touch;
+            justify-content: safe center; /* Центрируем новинки на планшетах, если их мало */
+          }
+
+          /* Карточка новинки в слайдере */
+          .right-sidebar-item {
+            flex: 0 0 240px; /* Фиксированная ширина карточки в скролле */
+            background: var(--card-bg); /* Теперь фон карточки выделяет её в ленте */
+            border: 1px solid var(--border-color);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+          }
+
+          .right-sidebar-item:hover {
+            transform: translateY(-5px); /* На мобилке лучше анимировать вверх, а не вбок */
+          }
+
+          .rs-info {
+            flex: 1; /* Чтобы текст занимал всё оставшееся место в карточке */
+          }
+
+          /* Скрываем кнопку "Все новинки" снизу, так как заголовок кликабельный */
+          .rs-view-all-btn {
+            display: none;
+          }
+
+          /* Красивый кастомный скроллбар для новинок */
+          .right-sidebar-list::-webkit-scrollbar {
+            height: 6px;
+          }
+          .right-sidebar-list::-webkit-scrollbar-track {
+            background: transparent;
+          }
+          .right-sidebar-list::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 10px;
+          }
+          .right-sidebar-list::-webkit-scrollbar-thumb:hover {
+            background: var(--accent);
+          }
         }
       `}</style>
     </aside>
