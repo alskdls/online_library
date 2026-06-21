@@ -22,6 +22,9 @@ const RightSidebar = () => {
 
   const handleGoToNew = () => navigate('/search?sort=new');
 
+  // Дублируем список книг, чтобы анимация была бесконечной и бесшовной
+  const duplicatedBooks = [...latestBooks, ...latestBooks];
+
   return (
     <aside className="right-sidebar-container">
       {/* ШАПКА — ВЕРНУЛИ В ЦЕНТР */}
@@ -33,29 +36,32 @@ const RightSidebar = () => {
         <div className="rs-underline"></div>
       </div>
 
-      {/* СПИСОК — СТАНОВИТСЯ СКРОЛЛОМ НА МОБИЛКАХ */}
-      <div className="right-sidebar-list">
-        {latestBooks.map(book => {
-          const cover = (book.image_url && book.image_url !== "[null]" && book.image_url.trim() !== "") 
-            ? book.image_url 
-            : "https://kappa.lol/pAubra";
+      {/* ОКНО ПРОСМОТРА ЛЕНТЫ (Маскирует вылезающие элементы) */}
+      <div className="rs-marquee-viewport">
+        {/* СПИСОК — СТАНОВИТСЯ СКРОЛЛОМ НА МОБИЛКАХ, С CSS АНИМАЦИЕЙ */}
+        <div className="right-sidebar-list marquee-track">
+          {duplicatedBooks.map((book, index) => {
+            const cover = (book.image_url && book.image_url !== "[null]" && book.image_url.trim() !== "") 
+              ? book.image_url 
+              : "https://kappa.lol/pAubra";
 
-          return (
-            <div 
-              key={book.id} 
-              className="right-sidebar-item"
-              onClick={() => navigate(`/book/${book.id}`)}
-            >
-              <div className="rs-image-wrapper">
-                <img src={cover} alt={book.title} />
+            return (
+              <div 
+                key={`${book.id}-${index}`} 
+                className="right-sidebar-item"
+                onClick={() => navigate(`/book/${book.id}`)}
+              >
+                <div className="rs-image-wrapper">
+                  <img src={cover} alt={book.title} />
+                </div>
+                <div className="rs-info">
+                  <div className="rs-item-title">{book.title}</div>
+                  <div className="rs-item-author">{book.author}</div>
+                </div>
               </div>
-              <div className="rs-info">
-                <div className="rs-item-title">{book.title}</div>
-                <div className="rs-item-author">{book.author}</div>
-              </div>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
 
       <button className="rs-view-all-btn" onClick={handleGoToNew}>
@@ -74,7 +80,7 @@ const RightSidebar = () => {
           box-shadow: 0 10px 40px var(--shadow-color);
           display: flex;
           flex-direction: column;
-          height: fit-content;
+          height: 680px; /* Задали фиксированную высоту контейнера на ПК для прокрутки */
           position: relative;
         }
 
@@ -113,10 +119,31 @@ const RightSidebar = () => {
           border-radius: 2px;
         }
 
+        /* Визуальное окно для скрытия выходящих за рамки книг */
+        .rs-marquee-viewport {
+          overflow: hidden;
+          flex-grow: 1;
+          position: relative;
+          width: 100%;
+          /* Мягкое растворение элементов по краям сверху и снизу */
+          mask-image: linear-gradient(to bottom, transparent, black 8%, black 92%, transparent);
+          -webkit-mask-image: linear-gradient(to bottom, transparent, black 8%, black 92%, transparent);
+        }
+
         .right-sidebar-list {
           display: flex;
           flex-direction: column;
           gap: 12px;
+        }
+
+        /* Запуск бесконечного движения вверх */
+        .marquee-track {
+          animation: marqueeVertical 28s linear infinite;
+        }
+
+        /* ОСТАНОВКА ЛЕНТЫ ПРИ НАВЕДЕНИИ КУРСОРA */
+        .rs-marquee-viewport:hover .marquee-track {
+          animation-play-state: paused;
         }
 
         .right-sidebar-item {
@@ -131,7 +158,7 @@ const RightSidebar = () => {
 
         .right-sidebar-item:hover {
           background: rgba(212, 163, 115, 0.15);
-          transform: translateX(5px);
+          transform: translateX(5px); /* Твоя оригинальная десктопная анимация сдвига */
         }
 
         .rs-image-wrapper {
@@ -192,66 +219,69 @@ const RightSidebar = () => {
           color: var(--accent);
         }
 
+        /* АНИМАЦИЯ ДЛЯ ВЕРТИКАЛЬНОГО ДВИЖЕНИЯ */
+        @keyframes marqueeVertical {
+          0% { transform: translateY(0); }
+          100% { transform: translateY(-50%); }
+        }
+
         /* ================= МЕДИА-ЗАПРОС ДЛЯ СМАРТФОНОВ И ПЛАНШЕТОВ ================= */
         @media (max-width: 1100px) {
           .right-sidebar-container {
             width: 100%;
             max-width: 1400px;
-            margin: 0 auto 40px auto; /* Центрируем саму панель по бокам */
+            height: auto;
+            margin: 0 auto 40px auto; 
             padding: 20px;
-            background: transparent;  /* Убираем лишний фон, чтобы не дублировать плашки */
-            border: none;             /* Убираем рамку на мобилках */
-            box-shadow: none;         /* Убираем массивную тень */
-            order: -1;                /* Если родитель флекс, кинет новинки НАВЕРХ (сразу после рекомендаций) */
+            background: transparent;  
+            border: none;             
+            box-shadow: none;         
+            order: -1;                
           }
 
-          /* Перестраиваем список в горизонтальную ленту */
+          .rs-marquee-viewport {
+            overflow-x: hidden; /* Скрываем дефолтный скроллбар, чтобы двигалась чистая строка */
+            mask-image: linear-gradient(to right, transparent, black 8%, black 92%, transparent);
+            -webkit-mask-image: linear-gradient(to right, transparent, black 8%, black 92%, transparent);
+          }
+
+          /* Перестраиваем список в горизонтальную бесконечную ленту */
           .right-sidebar-list {
             flex-direction: row;
-            overflow-x: auto;
-            overflow-y: hidden;
-            whiteSpace: nowrap;
-            padding-bottom: 15px;
+            width: max-content;
             gap: 20px;
-            -webkit-overflow-scrolling: touch;
-            justify-content: safe center; /* Центрируем новинки на планшетах, если их мало */
+            padding-bottom: 0;
           }
 
-          /* Карточка новинки в слайдере */
+          /* Переключаем на горизонтальное движение для мобилок */
+          .marquee-track {
+            animation: marqueeHorizontal 22s linear infinite;
+          }
+
           .right-sidebar-item {
-            flex: 0 0 240px; /* Фиксированная ширина карточки в скролле */
-            background: var(--card-bg); /* Теперь фон карточки выделяет её в ленте */
+            flex: 0 0 240px; 
+            background: var(--card-bg); 
             border: 1px solid var(--border-color);
             box-shadow: 0 4px 15px rgba(0,0,0,0.05);
           }
 
           .right-sidebar-item:hover {
-            transform: translateY(-5px); /* На мобилке лучше анимировать вверх, а не вбок */
+            transform: translateY(-5px); /* Твой оригинальный подъем вверх на мобилках */
           }
 
           .rs-info {
-            flex: 1; /* Чтобы текст занимал всё оставшееся место в карточке */
+            flex: 1; 
           }
 
-          /* Скрываем кнопку "Все новинки" снизу, так как заголовок кликабельный */
           .rs-view-all-btn {
             display: none;
           }
+        }
 
-          /* Красивый кастомный скроллбар для новинок */
-          .right-sidebar-list::-webkit-scrollbar {
-            height: 6px;
-          }
-          .right-sidebar-list::-webkit-scrollbar-track {
-            background: transparent;
-          }
-          .right-sidebar-list::-webkit-scrollbar-thumb {
-            background: var(--border-color);
-            border-radius: 10px;
-          }
-          .right-sidebar-list::-webkit-scrollbar-thumb:hover {
-            background: var(--accent);
-          }
+        /* АНИМАЦИЯ ДЛЯ ГОРИЗОНТАЛЬНОГО ДВИЖЕНИЯ */
+        @keyframes marqueeHorizontal {
+          0% { transform: translateX(0); }
+          100% { transform: translateX(-50%); }
         }
       `}</style>
     </aside>

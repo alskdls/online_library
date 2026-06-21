@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios'; // Добавил axios для новинок
-import { Flame } from 'lucide-react'; // Иконка огонька
+import axios from 'axios'; 
+import { Flame } from 'lucide-react'; 
 import BookCard from './BookCard';
 
-const Home = ({ searchQuery, extraFilters }) => {
+const Home = ({ searchQuery = '', extraFilters }) => {
   const [books, setBooks] = useState([]);
   const [genres, setGenres] = useState([]);
   const [favorites, setFavorites] = useState([]); 
   const [recommendedBooks, setRecommendedBooks] = useState([]); 
-  const [latestBooks, setLatestBooks] = useState([]); // Состояние для новинок
+  const [latestBooks, setLatestBooks] = useState([]); 
   
   const user = JSON.parse(localStorage.getItem('user'));
   const navigate = useNavigate();
@@ -23,28 +23,36 @@ const Home = ({ searchQuery, extraFilters }) => {
     .then(([booksData, genresData]) => {
       setBooks(booksData);
       setGenres(genresData);
-
-      // Генерация рекомендаций (случайные 5 книг)
-      if (booksData && booksData.length > 0) {
-        const shuffled = [...booksData].sort(() => 0.5 - Math.random());
-        setRecommendedBooks(shuffled.slice(0, 5));
-      }
     })
     .catch(err => console.error("Помилка завантаження даних:", err));
 
-    // 2. Завантажуємо новинки (твоя оригинальная логика)
+    // 2. Завантажуємо рекомендации из умного эндпоинта на бэкенде
+    const fetchRecommendations = async () => {
+      try {
+        const url = user && user.id 
+          ? `http://localhost:5000/api/books/recommended/${user.id}`
+          : 'http://localhost:5000/api/books/recommended/guest';
+        
+        const res = await axios.get(url);
+        setRecommendedBooks(res.data);
+      } catch (err) {
+        console.error("Ошибка загрузки рекомендаций:", err);
+      }
+    };
+    fetchRecommendations();
+
+    // 3. Завантажуємо новинки (из нового эндпоинта по реальной дате создания)
     const fetchLatest = async () => {
       try {
-        const res = await axios.get('http://localhost:5000/books');
-        const sorted = res.data.sort((a, b) => b.id - a.id).slice(0, 10);
-        setLatestBooks(sorted);
+        const res = await axios.get('http://localhost:5000/api/books/latest');
+        setLatestBooks(res.data);
       } catch (err) {
         console.error("Ошибка загрузки новинок:", err);
       }
     };
     fetchLatest();
 
-    // 3. Завантажуємо обране (якщо юзер авторизований)
+    // 4. Завантажуємо обране (якщо юзер авторизований)
     if (user && user.id) {
       fetch(`http://localhost:5000/favorites/${user.id}`)
         .then(res => res.json())
@@ -56,6 +64,35 @@ const Home = ({ searchQuery, extraFilters }) => {
   }, []); 
 
   const handleGoToNew = () => navigate('/search?sort=new');
+
+  // Дублируем список новинок для создания бесшовной бегущей дорожки на мобилках
+  const duplicatedLatestBooks = [...latestBooks, ...latestBooks];
+
+  // ИСПРАВЛЕННАЯ ФИЛЬТРАЦИЯ КНИГ ДЛЯ ВЫВОДА ПО ЖАНРАМ
+  const getFilteredBooks = () => {
+    return books.filter(book => {
+      const matchesSearch = book.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                            book.author.toLowerCase().includes(searchQuery.toLowerCase());
+
+      if (!extraFilters) return matchesSearch;
+
+      const { selectedGenres = [], selectedAuthors = [], selectedYears = {}, pageFilter = '' } = extraFilters;
+
+      const matchesGenre = selectedGenres.length === 0 || selectedGenres.includes(book.genre_id);
+      const matchesAuthor = selectedAuthors.length === 0 || selectedAuthors.includes(book.author);
+      const matchesYear = (book.year || 2026) >= (parseInt(selectedYears.from) || 0) && 
+                          (book.year || 2026) <= (parseInt(selectedYears.to) || 3000);
+      
+      let matchesPages = true;
+      if (pageFilter === 'short') matchesPages = book.pages <= 200;
+      else if (pageFilter === 'medium') matchesPages = book.pages > 200 && book.pages <= 500;
+      else if (pageFilter === 'long') matchesPages = book.pages > 500;
+
+      return matchesSearch && matchesGenre && matchesAuthor && matchesYear && matchesPages;
+    });
+  };
+
+  const filteredBooksList = getFilteredBooks();
 
   return (
     <div style={{ padding: '40px 20px', maxWidth: '1400px', margin: '0 auto', overflowX: 'hidden' }}>
@@ -73,10 +110,12 @@ const Home = ({ searchQuery, extraFilters }) => {
           <div className="horizontal-scroll-container" style={scrollContainerStyle}>
             {recommendedBooks.map(book => (
               <div key={`rec-${book.id}`} style={scrollItemStyle}>
-                <BookCard 
-                  book={book} 
-                  isFavoriteInitial={favorites.includes(book.id)} 
-                />
+                <div style={{pointerEvents: 'auto'}}>
+                  <BookCard 
+                    book={book} 
+                    isFavoriteInitial={favorites.includes(book.id)} 
+                  />
+                </div>
               </div>
             ))}
           </div>
@@ -94,36 +133,38 @@ const Home = ({ searchQuery, extraFilters }) => {
             <div style={underlineStyle}></div>
           </div>
 
-          {/* Горизонтальная лента с твоим оригинальным стилем карточек */}
-          <div className="horizontal-scroll-container" style={scrollContainerStyle}>
-            {latestBooks.map(book => {
-              const cover = (book.image_url && book.image_url !== "[null]" && book.image_url.trim() !== "") 
-                ? book.image_url 
-                : "https://kappa.lol/pAubra";
+          <div className="mobile-marquee-viewport">
+            <div className="mobile-marquee-track">
+              {duplicatedLatestBooks.map((book, index) => {
+                const cover = (book.image_url && book.image_url !== "[null]" && book.image_url.trim() !== "") 
+                  ? book.image_url 
+                  : "https://kappa.lol/pAubra";
 
-              return (
-                <div 
-                  key={`news-${book.id}`} 
-                  className="mobile-rs-item"
-                  onClick={() => navigate(`/book/${book.id}`)}
-                >
-                  <div className="mobile-rs-image-wrapper">
-                    <img src={cover} alt={book.title} />
+                return (
+                  <div 
+                    key={`news-${book.id}-${index}`} 
+                    className="mobile-rs-item"
+                    onClick={() => navigate(`/book/${book.id}`)}
+                  >
+                    <div className="mobile-rs-image-wrapper">
+                      <img src={cover} alt={book.title} />
+                    </div>
+                    <div className="mobile-rs-info">
+                      <div className="mobile-rs-item-title">{book.title}</div>
+                      <div className="mobile-rs-item-author">{book.author}</div>
+                    </div>
                   </div>
-                  <div className="mobile-rs-info">
-                    <div className="mobile-rs-item-title">{book.title}</div>
-                    <div className="mobile-rs-item-author">{book.author}</div>
-                  </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
         </section>
       )}
 
       {/* ================= 3. ВЫВОД КНИГ ПО ЖАНРАМ ================= */}
       {genres.map(genre => {
-        const genreBooks = books
+        // Фильтруем из уже обработанного getFilteredBooks списка книг
+        const genreBooks = filteredBooksList
           .filter(book => book.genre_id === genre.id)
           .slice(0, 8);
 
@@ -163,15 +204,35 @@ const Home = ({ searchQuery, extraFilters }) => {
         .genre-title-link { cursor: pointer; display: inline-block; transition: transform 0.3s ease, color 0.3s ease; color: var(--text-main); }
         .genre-title-link:hover { color: var(--accent); transform: scale(1.05); }
 
-        /* СКРЫВАЕМ блок Новинок на больших экранах (ведь там горит твой старый RightSidebar) */
+        /* СКРЫВАЕМ block Новинок на больших экранах */
         .mobile-news-section { display: none; }
 
         /* ПОКАЗЫВАЕМ только на маленьких устройствах (меньше 1100px) */
         @media (max-width: 1100px) {
           .mobile-news-section { display: block; }
+          
+          .mobile-marquee-viewport {
+            overflow: hidden;
+            width: 100%;
+            position: relative;
+            mask-image: linear-gradient(to right, transparent, black 8%, black 92%, transparent);
+            -webkit-mask-image: linear-gradient(to right, transparent, black 8%, black 92%, transparent);
+          }
+
+          .mobile-marquee-track {
+            display: flex;
+            gap: 20px;
+            width: max-content;
+            padding: 10px 0;
+            animation: mobileMarqueeHorizontal 25s linear infinite;
+          }
+
+          .mobile-marquee-viewport:hover .mobile-marquee-track,
+          .mobile-marquee-viewport:active .mobile-marquee-track {
+            animation-play-state: paused;
+          }
         }
 
-        /* Точь-в-точь оригинальный стиль карточки новинок, адаптированный под горизонтальную ленту */
         .mobile-rs-item {
           display: flex;
           gap: 12px;
@@ -181,12 +242,11 @@ const Home = ({ searchQuery, extraFilters }) => {
           background: rgba(255, 255, 255, 0.03);
           border: 2px solid var(--accent); 
           box-shadow: 0 10px 40px var(--shadow-color);
-          flex: 0 0 250px; /* Фиксированная ширина карточки в ленте */
+          flex: 0 0 250px;
           align-items: center;
           transition: all 0.3s ease;
         }
 
-        /* Эффект ховера в точности как в оригинальном сайдбаре */
         .mobile-rs-item:hover {
           background: rgba(212, 163, 115, 0.15);
           transform: translateX(5px);
@@ -231,7 +291,6 @@ const Home = ({ searchQuery, extraFilters }) => {
           margin-top: 2px;
         }
 
-        /* Кастомизация ползунка */
         .horizontal-scroll-container::-webkit-scrollbar {
           height: 8px;
         }
@@ -244,6 +303,11 @@ const Home = ({ searchQuery, extraFilters }) => {
         }
         .horizontal-scroll-container::-webkit-scrollbar-thumb:hover {
           background: var(--accent);
+        }
+
+        @keyframes mobileMarqueeHorizontal {
+          0% { transform: translateX(0); }
+          100% { transform: translateX(-50%); }
         }
       `}</style>
     </div>

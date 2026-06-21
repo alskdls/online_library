@@ -554,6 +554,103 @@ app.get('/users/:id/reviews-list', async (req, res) => {
     }
 });
 
+// =========================================================================
+//            НОВЫЕ ЭНДПОИНТЫ ДЛЯ ЖИВЫХ НОВИНОК И УМНЫХ РЕКОМЕНДАЦИЙ
+// =========================================================================
+
+// 1. Получение реальных новинок по дате создания (created_at)
+app.get('/api/books/latest', async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT books.*, genres.name AS genre_name 
+      FROM books 
+      LEFT JOIN genres ON books.genre_id = genres.id
+      ORDER BY books.created_at DESC
+      LIMIT 10
+    `);
+    res.json(result.rows);
+  } catch (err) {
+    console.error("Ошибка при получении новинок:", err.message);
+    res.status(500).send("Ошибка сервера");
+  }
+});
+
+// 2. Рекомендации для ГОСТЕЙ (топ книг по количеству лайков)
+app.get('/api/books/recommended/guest', async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT b.*, genres.name AS genre_name, COUNT(br.id) as likes_count
+      FROM books b
+      LEFT JOIN genres ON b.genre_id = genres.id
+      LEFT JOIN book_reactions br ON b.id = br.book_id AND br.type = 'like'
+      GROUP BY b.id, genres.name
+      ORDER BY likes_count DESC, b.id DESC
+      LIMIT 5
+    `);
+    res.json(result.rows);
+  } catch (err) {
+    console.error("Ошибка рекомендаций для гостей:", err.message);
+    res.status(500).send("Ошибка сервера");
+  }
+});
+
+// 3. ПЕРСОНАЛЬНЫЕ РЕКОМЕНДАЦИИ для авторизованных пользователей
+app.get('/api/books/recommended/:userId', async (req, res) => {
+  const { userId } = req.params;
+  try {
+    // Вытягиваем ID жанров, которые пользователь лайкнул или добавил в избранное
+    const userGenresResult = await pool.query(`
+      SELECT DISTINCT b.genre_id 
+      FROM books b
+      LEFT JOIN book_reactions br ON b.id = br.book_id
+      LEFT JOIN favorites f ON b.id = f.book_id
+      WHERE (br.user_id = $1 AND br.type = 'like') OR f.user_id = $1
+    `, [userId]);
+
+    const genreIds = userGenresResult.rows.map(row => row.genre_id).filter(id => id !== null);
+
+    // Если у пользователя еще нет предпочтений (новый аккаунт), отдаем популярное
+    if (genreIds.length === 0) {
+      const fallbackResult = await pool.query(`
+        SELECT b.*, genres.name AS genre_name 
+        FROM books b
+        LEFT JOIN genres ON b.genre_id = genres.id
+        ORDER BY b.id DESC LIMIT 5
+      `);
+      return res.json(fallbackResult.rows);
+    }
+
+    // Ищем книги из любимых жанров, которые юзер еще НЕ читал/НЕ добавил в списки
+    const recommendedResult = await pool.query(`
+      SELECT DISTINCT b.*, genres.name AS genre_name
+      FROM books b
+      LEFT JOIN genres ON b.genre_id = genres.id
+      WHERE b.genre_id = ANY($1::int[])
+        AND b.id NOT IN (
+          SELECT book_id FROM user_books WHERE user_id = $2
+        )
+      ORDER BY RANDOM()
+      LIMIT 5
+    `, [genreIds, userId]);
+
+    // Если в этих жанрах ничего нового нет, добираем просто свежие книги сайта
+    if (recommendedResult.rows.length === 0) {
+      const simpleResult = await pool.query(`
+        SELECT b.*, genres.name AS genre_name FROM books b 
+        LEFT JOIN genres ON b.genre_id = genres.id
+        WHERE b.id NOT IN (SELECT book_id FROM user_books WHERE user_id = $2)
+        ORDER BY b.id DESC LIMIT 5
+      `, [userId]);
+      return res.json(simpleResult.rows);
+    }
+
+    res.json(recommendedResult.rows);
+  } catch (err) {
+    console.error("Ошибка при генерации персональных рекомендаций:", err.message);
+    res.status(500).send("Ошибка сервера");
+  }
+});
+
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT} with WebSockets enabled`);
 });

@@ -4,10 +4,8 @@ const FiltersModal = ({ isOpen, onClose, genres, authors = [], onApplyFilters })
   const [activeSection, setActiveSection] = useState(null);
   const [selectedGenres, setSelectedGenres] = useState([]);
   const [selectedAuthors, setSelectedAuthors] = useState([]);
-  const [priceRange, setPriceRange] = useState({ min: '', max: '' });
   const [selectedYears, setSelectedYears] = useState({ from: '', to: '' });
   const [pageFilter, setPageFilter] = useState('');
-  const [onlyWithImages, setOnlyWithImages] = useState(false);
 
   if (!isOpen) return null;
 
@@ -20,10 +18,8 @@ const FiltersModal = ({ isOpen, onClose, genres, authors = [], onApplyFilters })
   const handleReset = () => {
     setSelectedGenres([]);
     setSelectedAuthors([]);
-    setPriceRange({ min: '', max: '' });
     setSelectedYears({ from: '', to: '' });
     setPageFilter('');
-    setOnlyWithImages(false);
   };
 
   return (
@@ -55,13 +51,6 @@ const FiltersModal = ({ isOpen, onClose, genres, authors = [], onApplyFilters })
             )) : <p style={{fontSize: '12px'}}>Авторів не знайдено</p>}
           </FilterSection>
 
-          <FilterSection title="Ціна (грн)" id="price" active={activeSection} onToggle={toggleSection}>
-            <div style={{display: 'flex', gap: '5px'}}>
-                <input type="number" placeholder="Від" style={inputStyle} value={priceRange.min} onChange={(e) => setPriceRange({...priceRange, min: e.target.value})} />
-                <input type="number" placeholder="До" style={inputStyle} value={priceRange.max} onChange={(e) => setPriceRange({...priceRange, max: e.target.value})} />
-            </div>
-          </FilterSection>
-
           <FilterSection title="Рік видання" id="years" active={activeSection} onToggle={toggleSection}>
             <div style={{display: 'flex', gap: '5px'}}>
                 <input type="number" placeholder="З" style={inputStyle} value={selectedYears.from} onChange={(e) => setSelectedYears({...selectedYears, from: e.target.value})} />
@@ -77,11 +66,6 @@ const FiltersModal = ({ isOpen, onClose, genres, authors = [], onApplyFilters })
               <option value="long">Понад 500 сторінок</option>
             </select>
           </FilterSection>
-
-          <label style={checkboxLabelStyle}>
-             <input type="checkbox" checked={onlyWithImages} onChange={() => setOnlyWithImages(!onlyWithImages)} />
-             Тільки з обкладинкою 📸
-          </label>
         </div>
 
         <button 
@@ -94,7 +78,7 @@ const FiltersModal = ({ isOpen, onClose, genres, authors = [], onApplyFilters })
 
         <button 
           style={applyBtnStyle} 
-          onClick={() => onApplyFilters({ selectedGenres, selectedAuthors, priceRange, selectedYears, pageFilter, onlyWithImages })}
+          onClick={() => onApplyFilters({ selectedGenres, selectedAuthors, selectedYears, pageFilter })}
         >
           Застосувати
         </button>
@@ -114,7 +98,7 @@ const FilterSection = ({ title, id, active, onToggle, children }) => {
           transition: 'transform 0.3s ease', 
           color: isOpen ? 'var(--accent)' : '#ccc',
           transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)' 
-        }}>▼</span>
+         }}>▼</span>
       </div>
       
       <div style={{
@@ -192,14 +176,8 @@ const closeBtnStyle = {
   cursor: 'pointer', color: 'var(--text-muted)' 
 };
 
-const checkboxLabelStyle = { 
-  padding: '20px 0', display: 'flex', alignItems: 'center', 
-  gap: '10px', fontWeight: '600', cursor: 'pointer', 
-  color: 'var(--text-main)', userSelect: 'none' 
-};
-
 const resetBtnStyle = { 
-  width: '100%', marginTop: '10px', padding: '12px', 
+  width: '100%', marginTop: '20px', padding: '12px', 
   background: 'transparent', color: '#e74c3c', 
   border: '1px solid #fed7d7', borderRadius: '10px', 
   cursor: 'pointer', fontWeight: '600', transition: '0.3s'

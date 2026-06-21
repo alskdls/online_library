@@ -151,7 +151,6 @@ const BookDetail = () => {
   const isFileContent = book.content && book.content.startsWith('/uploads/');
 
   return (
-    /* БАЗА КАК В HOME.JS: Используем padding и maxWidth напрямую, без лишних оберток */
     <div style={{ padding: '40px 20px', maxWidth: '1400px', margin: '0 auto', color: 'var(--text-main)' }}>
       <style>{`
         :root {
@@ -222,7 +221,8 @@ const BookDetail = () => {
           {book.content ? (
               isFileContent ? (
                 <div style={{...professionalReaderWrapper, backgroundColor: isDarkMode ? '#242424' : '#333'}}>
-                  <Worker workerUrl="https://unpkg.com/pdfjs-dist@3.4.120/build/pdf.worker.min.js">
+                  {/* ИСПРАВЛЕНО: Версия воркера теперь строго соответствует версии API (3.11.174) */}
+                  <Worker workerUrl="https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js">
                     <div style={{...readerLayout, backgroundColor: isDarkMode ? '#1a1a1a' : '#fff'}}>
                       <div style={{...readerToolbar, backgroundColor: isDarkMode ? '#242424' : '#f9f9f9', borderBottomColor: 'var(--border-color)'}}>
                         <Toolbar />
@@ -294,7 +294,7 @@ const BookDetail = () => {
   );
 };
 
-// Стили обновлены под "базу" Home.js
+// Стили
 const backBtnStyle = { background: 'none', border: 'none', color: 'var(--secondary-brown)', cursor: 'pointer', fontSize: '16px' };
 const topSection = { display: 'flex', gap: '50px', marginBottom: '40px', flexWrap: 'wrap' };
 const imageSide = { flex: '0 0 280px' };

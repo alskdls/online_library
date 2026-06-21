@@ -26,34 +26,39 @@ const BookList = ({ selectedGenre, searchQuery, extraFilters }) => {
   }, [user?.id]);
 
   const filteredBooks = books.filter(book => {
+    // 1. Поиск по названию или автору
     const matchesSearch = book.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
                           book.author.toLowerCase().includes(searchQuery.toLowerCase());
     
     const activeGenreId = urlGenreId ? parseInt(urlGenreId) : selectedGenre;
 
+    // Если дополнительные фильтры не применили, фильтруем только по поиску и базовому жанру
     if (!extraFilters) {
       const matchesGenre = activeGenreId ? book.genre_id === activeGenreId : true;
       return matchesSearch && matchesGenre;
     }
 
-    const { selectedGenres, selectedAuthors, priceRange, selectedYears, pageFilter, onlyWithImages } = extraFilters;
+    const { selectedGenres = [], selectedAuthors = [], selectedYears = {}, pageFilter = '' } = extraFilters;
 
+    // 2. Фильтр по жанрам
     const matchesGenre = selectedGenres.length > 0 
       ? selectedGenres.includes(book.genre_id)
       : (activeGenreId ? book.genre_id === activeGenreId : true);
 
+    // 3. Фильтр по авторам
     const matchesAuthor = selectedAuthors.length === 0 || selectedAuthors.includes(book.author);
-    const matchesPrice = book.price >= (parseFloat(priceRange.min) || 0) && book.price <= (parseFloat(priceRange.max) || Infinity);
-    const matchesYear = (book.year || 2024) >= (parseInt(selectedYears.from) || 0) && (book.year || 2024) <= (parseInt(selectedYears.to) || 3000);
     
+    // 4. Фильтр по годам (ставим дефолтный 2026 год, если у книги нет года)
+    const matchesYear = (book.year || 2026) >= (parseInt(selectedYears.from) || 0) && 
+                        (book.year || 2026) <= (parseInt(selectedYears.to) || 3000);
+    
+    // 5. Фильтр по страницам
     let matchesPages = true;
     if (pageFilter === 'short') matchesPages = book.pages <= 200;
     else if (pageFilter === 'medium') matchesPages = book.pages > 200 && book.pages <= 500;
     else if (pageFilter === 'long') matchesPages = book.pages > 500;
 
-    const matchesImage = onlyWithImages ? (book.image_url && book.image_url.trim() !== "") : true;
-
-    return matchesSearch && matchesGenre && matchesAuthor && matchesPrice && matchesYear && matchesPages && matchesImage;
+    return matchesSearch && matchesGenre && matchesAuthor && matchesYear && matchesPages;
   });
 
   return (
@@ -86,7 +91,6 @@ const BookList = ({ selectedGenre, searchQuery, extraFilters }) => {
     </div>
   );
 };
-
 
 const mainWrapperStyle = {
   padding: '40px 20px',
@@ -127,7 +131,7 @@ const resetAllBtnStyle = {
   fontWeight: 'bold',
   fontSize: '14px',
   transition: 'all 0.3s ease',
-  boxShadow: '0 4px 10px rgba(0, 0, 0, 0.2)'
+  shadowColor: '0 4px 10px rgba(0, 0, 0, 0.2)'
 };
 
 export default BookList;
