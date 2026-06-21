@@ -1,7 +1,38 @@
 import React from 'react';
-import { Mail, Phone, MapPin, Share2, Globe, MessageSquare, BookOpen } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import { BookOpen, LayoutGrid, Sparkles, Trophy, Shuffle } from 'lucide-react';
 
 const Footer = () => {
+  const navigate = useNavigate();
+
+  // Логіка переходів як у Сайдбарі
+  const handleGoToNew = () => {
+    navigate('/search?sort=new');
+  };
+
+  const handleNavClick = (path) => {
+    navigate(path);
+  };
+
+  const handleRandomBook = async () => {
+    try {
+      const res = await axios.get('http://localhost:5000/books');
+      const books = res.data;
+      
+      if (books && books.length > 0) {
+        const randomIndex = Math.floor(Math.random() * books.length);
+        const randomBookId = books[randomIndex].id;
+        navigate(`/book/${randomBookId}`);
+      } else {
+        alert("Книг поки що немає");
+      }
+    } catch (err) {
+      console.error("Помилка при пошуку рандомної книги:", err);
+      alert("Не вдалося завантажити список книг");
+    }
+  };
+
   return (
     <footer style={footerStyle}>
       <div style={containerStyle}>
@@ -16,41 +47,36 @@ const Footer = () => {
             Твій персональний цифровий простір для навчання та розвитку. 
             Ми робимо доступ до знань простішим та зручнішим.
           </p>
-          <div style={socialWrapperStyle}>
-             <Share2 size={18} className="social-icon" style={socialIconStyle} />
-             <Globe size={18} className="social-icon" style={socialIconStyle} />
-             <MessageSquare size={18} className="social-icon" style={socialIconStyle} />
-          </div>
         </div>
 
-        {/* Блок 2: Навігація */}
-        <div style={sectionStyle}>
-          <h4 style={miniHeadingStyle}>Навігація</h4>
-          <ul style={listStyle}>
-            <li className="footer-link" style={listItemStyle}>Про нас</li>
-            <li className="footer-link" style={listItemStyle}>Правила користування</li>
-            <li className="footer-link" style={listItemStyle}>Допомога</li>
-            <li className="footer-link" style={listItemStyle}>FAQ</li>
-          </ul>
-        </div>
+      </div>
 
-        {/* Блок 3: Контакти */}
-        <div style={sectionStyle}>
-          <h4 style={miniHeadingStyle}>Зв'язок з нами</h4>
-          <div style={contactItemStyle}>
-            <Mail size={14} color="var(--accent)" />
-            <span style={textStyle}>support@library.ua</span>
+      {/* Роздільна лінія на всю ширину футера */}
+      <div style={fullWidthDividerStyle} />
+
+      <div style={containerStyle}>
+        {/* Горизонтальний рядок: Кнопки навігації із сайдбара */}
+        <div style={navRowStyle}>
+          <div className="footer-nav-item" style={navItemStyle} onClick={() => handleNavClick('/')}>
+            <LayoutGrid size={16} /> <span>Головна</span>
           </div>
-          <div style={contactItemStyle}>
-            <Phone size={14} color="var(--accent)" />
-            <span style={textStyle}>+380 (99) 123-45-67</span>
+          
+          <div className="footer-nav-item" style={navItemStyle} onClick={handleGoToNew}>
+            <Sparkles size={16} /> <span>Новинки</span>
           </div>
-          <div style={contactItemStyle}>
-            <MapPin size={14} color="var(--accent)" />
-            <span style={textStyle}>м. Львів, вул. Технічна, 1</span>
+
+          <div className="footer-nav-item" style={navItemStyle} onClick={() => handleNavClick('/search?sort=top')}>
+            <Trophy size={16} /> <span>Топ книги</span>
+          </div>
+
+          <div className="footer-nav-item" style={navItemStyle} onClick={() => handleNavClick('/recommendations')}>
+            <Sparkles size={16} color="var(--accent)" /> <span>Рекомендації</span>
+          </div>
+
+          <div className="footer-nav-item" style={navItemStyle} onClick={handleRandomBook}>
+            <Shuffle size={16} /> <span>Рандомна книга</span>
           </div>
         </div>
-
       </div>
 
       <div style={bottomBarStyle}>
@@ -60,22 +86,22 @@ const Footer = () => {
       </div>
 
       <style>{`
-        .footer-link {
-          transition: all 0.3s ease;
-          display: block;
-        }
-        .footer-link:hover {
-          color: #fff !important;
-          transform: scale(1.05);
-        }
-        .social-icon {
+        .footer-nav-item {
+          display: flex;
+          align-items: center;
+          gap: 8px;
           cursor: pointer;
-          transition: transform 0.3s ease, color 0.3s ease;
-          color: #a1887f;
+          color: #d7ccc8;
+          font-size: 14px;
+          font-weight: 500;
+          padding: 8px 16px;
+          border-radius: 20px;
+          transition: all 0.3s ease;
         }
-        .social-icon:hover {
-          color: var(--accent);
-          transform: translateY(-3px);
+        .footer-nav-item:hover {
+          background-color: #5d4037;
+          color: #fff !important;
+          transform: translateY(-2px);
         }
       `}</style>
     </footer>
@@ -87,8 +113,8 @@ const Footer = () => {
 const footerStyle = {
   background: '#2c1e1a',
   color: '#f5f5f5',
-  padding: '60px 0 20px 0',
-  marginTop: '0', // ЗМІНИТИ З 40px НА 0, щоб прибрати смугу зверху
+  padding: '50px 0 20px 0',
+  marginTop: '0', 
   borderTop: '1px solid rgba(255, 255, 255, 0.05)',
   width: '100%',
   position: 'relative',
@@ -97,29 +123,29 @@ const footerStyle = {
 
 const containerStyle = {
   display: 'flex',
-  justifyContent: 'space-around', // Більш рівномірний розподіл
-  alignItems: 'flex-start',
-  flexWrap: 'wrap',
+  flexDirection: 'column', 
+  alignItems: 'center',
   maxWidth: '1200px',
   margin: '0 auto',
   padding: '0 40px',
-  gap: '40px'
+  width: '100%',
+  boxSizing: 'border-box'
 };
 
 const sectionStyle = {
-  flex: '1',
-  minWidth: '250px',
+  width: '100%',
+  maxWidth: '600px',
   display: 'flex',
   flexDirection: 'column',
-  alignItems: 'center', // ЦЕНТРУВАННЯ КОНТЕНТУ В СТОВПЧИКУ
-  textAlign: 'center'    // ЦЕНТРУВАННЯ ТЕКСТУ
+  alignItems: 'center', 
+  textAlign: 'center'    
 };
 
 const logoWrapperStyle = {
   display: 'flex',
   alignItems: 'center',
   gap: '10px',
-  marginBottom: '20px'
+  marginBottom: '15px'
 };
 
 const headingStyle = {
@@ -131,15 +157,6 @@ const headingStyle = {
   letterSpacing: '1px'
 };
 
-const miniHeadingStyle = {
-  color: 'var(--accent)',
-  marginBottom: '25px',
-  fontSize: '14px',
-  fontWeight: 'bold',
-  textTransform: 'uppercase',
-  letterSpacing: '1px'
-};
-
 const textStyle = {
   fontSize: '14px',
   lineHeight: '1.6',
@@ -147,42 +164,29 @@ const textStyle = {
   margin: 0
 };
 
-const listStyle = {
-  listStyle: 'none',
-  padding: 0,
-  margin: 0
+// Нова лінія розділювача, розтягнута на 100% ширини екрана
+const fullWidthDividerStyle = {
+  width: '100%',
+  borderTop: '1px solid rgba(255, 255, 255, 0.07)',
+  margin: '30px 0'
 };
 
-const listItemStyle = {
-  fontSize: '14px',
-  marginBottom: '12px',
-  cursor: 'pointer',
-  color: '#a1887f'
-};
-
-const contactItemStyle = {
+const navRowStyle = {
   display: 'flex',
+  justifyContent: 'center',
   alignItems: 'center',
-  justifyContent: 'center', // Центрування іконки разом з текстом
-  gap: '12px',
-  marginBottom: '15px',
+  gap: '15px', 
+  flexWrap: 'wrap',
   width: '100%'
 };
 
-const socialWrapperStyle = {
-  display: 'flex',
-  gap: '20px',
-  marginTop: '25px',
-  justifyContent: 'center'
-};
-
-const socialIconStyle = {
-  opacity: 0.8
+const navItemStyle = {
+  userSelect: 'none'
 };
 
 const bottomBarStyle = {
   textAlign: 'center',
-  marginTop: '60px',
+  marginTop: '40px',
   paddingTop: '25px',
   borderTop: '1px solid rgba(255, 255, 255, 0.05)',
   fontSize: '12px',

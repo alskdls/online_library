@@ -1,10 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { Worker, Viewer } from '@react-pdf-viewer/core';
-import { toolbarPlugin } from '@react-pdf-viewer/toolbar';
-import '@react-pdf-viewer/core/lib/styles/index.css';
-import '@react-pdf-viewer/toolbar/lib/styles/index.css';
+import HTMLFlipBook from 'react-pageflip';
 
 const BookDetail = () => {
   const { id } = useParams();
@@ -37,9 +34,9 @@ const BookDetail = () => {
   const [replyTo, setReplyTo] = useState(null); 
   const [currentStatus, setCurrentStatus] = useState(null);
   const [bookReactions, setBookReactions] = useState({ likes: 0, dislikes: 0, userReaction: null });
+  const [pages, setPages] = useState([]); 
 
-  const toolbarPluginInstance = toolbarPlugin();
-  const { Toolbar } = toolbarPluginInstance;
+  const bookRef = useRef();
   const user = JSON.parse(localStorage.getItem('user'));
   const bookIdNum = parseInt(id);
 
@@ -48,6 +45,23 @@ const BookDetail = () => {
       const booksRes = await axios.get(`http://localhost:5000/books`);
       const foundBook = booksRes.data.find(b => b.id === bookIdNum);
       setBook(foundBook);
+
+      if (foundBook && foundBook.content) {
+        const textContent = foundBook.content;
+        const words = textContent.split(' ');
+        const wordsPerPage = 90; 
+        const generatedPages = [];
+        
+        for (let i = 0; i < words.length; i += wordsPerPage) {
+          generatedPages.push({
+            text: words.slice(i, i + wordsPerPage).join(' ')
+          });
+        }
+        if (generatedPages.length % 2 !== 0) {
+          generatedPages.push({ text: "" });
+        }
+        setPages(generatedPages);
+      }
 
       const ratingRes = await axios.get(`http://localhost:5000/books/${id}/rating`);
       setRatingData(ratingRes.data);
@@ -75,6 +89,7 @@ const BookDetail = () => {
     } catch (err) { console.error(err); }
   };
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { fetchData(); }, [id]);
 
   useEffect(() => {
@@ -148,7 +163,9 @@ const BookDetail = () => {
 
   const cover = (book.image_url && book.image_url !== "[null]" && book.image_url.trim() !== "") ? book.image_url : "https://kappa.lol/pAubra";
   const isButtonActive = userRating > 0 && comment.trim().length > 0 && cooldown === 0;
-  const isFileContent = book.content && book.content.startsWith('/uploads/');
+
+  // Проверяем, что у нас в контенте: ссылка на файл или текст
+  const isFile = book.content && book.content.startsWith('/uploads/');
 
   return (
     <div style={{ padding: '40px 20px', maxWidth: '1400px', margin: '0 auto', color: 'var(--text-main)' }}>
@@ -162,6 +179,9 @@ const BookDetail = () => {
           --input-bg: ${isDarkMode ? '#2d2d2d' : '#fff'};
         }
         * { transition: none !important; }
+        .stf__parent {
+          box-shadow: 0 12px 38px rgba(0,0,0,0.4) !important;
+        }
       `}</style>
 
       <div style={{ marginBottom: '30px' }}>
@@ -216,25 +236,46 @@ const BookDetail = () => {
         <div style={descriptionText}>{book.description}</div>
       </div>
 
-      <div id="reader-section" style={{ marginTop: '50px' }}>
+      {/* УВЕЛИЧЕННЫЙ И РАСШИРЕННЫЙ БЛОК ЧИТАЛКИ */}
+      <div id="reader-section" style={{ marginTop: '50px', width: '100%' }}>
           <h3 style={{...sectionHeader, borderBottomColor: 'var(--accent-brown)'}}>Читати онлайн</h3>
-          {book.content ? (
-              isFileContent ? (
-                <div style={{...professionalReaderWrapper, backgroundColor: isDarkMode ? '#242424' : '#333'}}>
-                  {/* ИСПРАВЛЕНО: Версия воркера теперь строго соответствует версии API (3.11.174) */}
-                  <Worker workerUrl="https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js">
-                    <div style={{...readerLayout, backgroundColor: isDarkMode ? '#1a1a1a' : '#fff'}}>
-                      <div style={{...readerToolbar, backgroundColor: isDarkMode ? '#242424' : '#f9f9f9', borderBottomColor: 'var(--border-color)'}}>
-                        <Toolbar />
-                      </div>
-                      <div style={{ flex: 1, overflow: 'hidden', filter: isDarkMode ? 'invert(0.9) hue-rotate(180deg)' : 'none' }}>
-                        <Viewer fileUrl={`http://localhost:5000${book.content}`} theme={isDarkMode ? 'dark' : 'light'} />
-                      </div>
+          
+          {isFile ? (
+            <div style={{ 
+              width: '100%', 
+              height: '1200px', // Увеличил высоту в 1.5 раза (было 800px)
+              borderRadius: '12px', 
+              overflow: 'hidden', 
+              boxShadow: '0 12px 38px rgba(0,0,0,0.3)',
+              backgroundColor: '#333'
+            }}>
+              <iframe 
+                src={`http://localhost:5000${book.content}#view=FitH&toolbar=0`} 
+                width="100%" 
+                height="100%" 
+                style={{ border: 'none' }}
+                title={book.title}
+              />
+            </div>
+          ) : pages.length > 0 ? (
+            // Тут оставляем FlipBook как было, если это текст
+            <div style={{...professionalReaderWrapper, backgroundColor: isDarkMode ? '#1a1a1a' : '#2b211f', width: '100%'}}>
+              <button onClick={() => bookRef.current?.pageFlip().flipPrev()} style={navArrowStyle}>‹</button>
+              <HTMLFlipBook width={600} height={850} size="fixed" minWidth={400} maxWidth={1000} minHeight={600} maxHeight={1200} showCover={false} ref={bookRef}>
+                {pages.map((page, index) => (
+                  <div key={index} style={{...pagePaperStyle, backgroundColor: isDarkMode ? '#262322' : '#fcfaf2'}}>
+                    <div style={pageInnerContentStyle}>
+                      <p style={{...textStyle, color: isDarkMode ? '#e0dcd3' : '#2c2523'}}>{page.text}</p>
+                      <span style={pageNumberStyle}>{index + 1}</span>
                     </div>
-                  </Worker>
-                </div>
-              ) : <div style={{...readerBoxStyle, backgroundColor: 'var(--input-bg)', borderColor: 'var(--border-color)'}}>{book.content}</div>
-          ) : <div style={bookPlaceholder}>Контент відсутній...</div>}
+                  </div>
+                ))}
+              </HTMLFlipBook>
+              <button onClick={() => bookRef.current?.pageFlip().flipNext()} style={navArrowStyle}>›</button>
+            </div>
+          ) : (
+            <div style={bookPlaceholder}>Контент відсутній або завантажується...</div>
+          )}
       </div>
 
       <div style={{...bottomActionsBar, borderTopColor: 'var(--border-color)'}}>
@@ -312,11 +353,15 @@ const favoriteBtn = (active, dark) => ({ backgroundColor: active ? 'var(--second
 const sectionHeader = { fontSize: '22px', borderBottom: '2px solid', width: 'fit-content', paddingBottom: '5px', marginBottom: '20px', textTransform: 'uppercase' };
 const descriptionSection = { marginTop: '40px' };
 const descriptionText = { lineHeight: '1.7', whiteSpace: 'pre-wrap', textAlign: 'left' };
-const professionalReaderWrapper = { borderRadius: '12px', padding: '10px', marginTop: '20px' };
-const readerLayout = { display: 'flex', flexDirection: 'column', height: '800px', borderRadius: '12px', overflow: 'hidden' };
-const readerToolbar = { borderBottom: '1px solid', padding: '5px 10px' };
-const readerBoxStyle = { padding: '30px', borderRadius: '10px', border: '1px solid', lineHeight: '1.8', fontSize: '18px', textAlign: 'left', whiteSpace: 'pre-wrap', maxHeight: '600px', overflowY: 'auto' };
-const commentsSection = { marginTop: '50px' };
+
+const professionalReaderWrapper = { borderRadius: '16px', padding: '30px 20px', marginTop: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '20px' };
+const navArrowStyle = { background: 'rgba(255, 255, 255, 0.08)', border: 'none', color: '#fff', fontSize: '36px', width: '46px', height: '46px', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', userSelect: 'none' };
+const pagePaperStyle = { borderLeft: '1px solid rgba(0,0,0,0.12)', borderRight: '1px solid rgba(0,0,0,0.05)', boxShadow: 'inset 10px 0 15px rgba(0,0,0,0.03), 0 4px 12px rgba(0,0,0,0.15)', boxSizing: 'border-box' };
+const pageInnerContentStyle = { padding: '35px 30px', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', boxSizing: 'border-box' };
+const textStyle = { fontSize: '15px', lineHeight: '1.65', textAlign: 'justify', margin: 0, fontFamily: '"Georgia", serif', whiteSpace: 'pre-wrap' };
+const pageNumberStyle = { display: 'block', width: '100%', textAlign: 'center', color: '#8b827e', fontSize: '12px', fontWeight: '600' };
+
+const commentsSection = { marginTop: '50px' }; 
 const commentForm = { display: 'flex', flexDirection: 'column', gap: '10px' };
 const textAreaStyle = { width: '100%', padding: '15px', borderRadius: '8px', border: '1px solid', minHeight: '120px', boxSizing: 'border-box' };
 const sendCommentBtn = { padding: '12px 28px', color: '#fff', border: 'none', borderRadius: '4px', fontWeight: 'bold', cursor: 'pointer' };
@@ -331,17 +376,13 @@ const smallActionLink = { background: 'none', border: 'none', color: 'var(--seco
 const replyStatusStyle = { display: 'flex', justifyContent: 'space-between', padding: '12px', borderRadius: '10px', marginBottom: '10px' };
 const statusPanelSide = { marginTop: '20px', display: 'flex', flexDirection: 'column', gap: '8px', padding: '15px', borderRadius: '10px' };
 const statusBtnStyle = (color, isActive, dark) => ({
-  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '10px', border: 'none', borderRadius: '6px',
-  cursor: 'pointer', fontSize: '14px', fontWeight: '600',
+  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '10px', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '14px', fontWeight: '600',
   backgroundColor: isActive ? color : (dark ? '#333' : '#fff'), color: isActive ? '#fff' : (dark ? '#bbb' : '#555'),
 });
 const bottomActionsBar = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '15px', padding: '15px 10px 0', borderTop: '1px solid' };
 const bookReactionContainerBottom = { display: 'flex', gap: '12px' };
 const bookReactionBtn = (isActive, color, dark) => ({
-  display: 'flex', alignItems: 'center', padding: '6px 16px', borderRadius: '20px',
-  border: isActive ? `2px solid ${color}` : `1px solid var(--border-color)`,
-  backgroundColor: isActive ? `${color}20` : 'var(--input-bg)',
-  color: isActive ? color : 'var(--text-main)', cursor: 'pointer', fontWeight: 'bold'
+  display: 'flex', alignItems: 'center', padding: '6px 16px', borderRadius: '20px', border: isActive ? `2px solid ${color}` : `1px solid var(--border-color)`, backgroundColor: isActive ? `${color}20` : 'var(--input-bg)', color: isActive ? color : 'var(--text-main)', cursor: 'pointer', fontWeight: 'bold'
 });
 const ratingValue = { fontWeight: 'bold', fontSize: '18px' };
 const votesCount = { fontSize: '12px' };

@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom'; // Заменили Link на useNavigate для ручного контроля переходов
 import FiltersModal from './FiltersModal';
-import { Book, LogOut, User, Menu, Home, Heart, ShoppingCart, Settings2 } from 'lucide-react';
+import { Book, LogOut, User, Menu, X, Home, Heart, Settings2 } from 'lucide-react';
 
-const Header = ({ onSearch, onApplyFilters, socket, onMenuClick }) => {
+// Добавили проп onClose в параметры компонента
+const Header = ({ onSearch, onApplyFilters, socket, onMenuClick, isSidebarOpen, onClose }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [genres, setGenres] = useState([]);
   const [authors, setAuthors] = useState([]);
@@ -21,6 +22,14 @@ const Header = ({ onSearch, onApplyFilters, socket, onMenuClick }) => {
     });
   }, []);
 
+  // Новая функция: делает переход по ссылке и автоматически закрывает сайдбар на мобилках
+  const handleNavigation = (path) => {
+    navigate(path);
+    if (window.innerWidth <= 1100 && onClose) {
+      onClose();
+    }
+  };
+
   const handleLogout = () => {
     if (socket) {
       socket.disconnect(); 
@@ -36,28 +45,28 @@ const Header = ({ onSearch, onApplyFilters, socket, onMenuClick }) => {
     <header style={headerStyle}>
       {/* ЛІВА ЧАСТИНА */}
       <div style={leftSectionStyle}>
+        
+        {/* ИСПРАВЛЕННАЯ КНОПКА БУРГЕРА */}
         <div className="mobile-menu-btn" onClick={onMenuClick} style={burgerBtnStyle}>
-          <Menu size={24} color="#fff" />
+          {isSidebarOpen ? <X size={24} color="var(--accent)" /> : <Menu size={24} color="#fff" />}
         </div>
 
-        <div onClick={() => navigate('/')} style={logoWrapperStyle}>
+        {/* Используем handleNavigation для логотипа */}
+        <div onClick={() => handleNavigation('/')} style={logoWrapperStyle}>
           <Book size={24} color="var(--accent)" />
           <span style={logoTextStyle} className="header-logo-text">Бібліотека</span>
         </div>
         
         <nav style={navStyle} className="header-navigation">
-          <Link to="/" className="nav-link" style={linkStyle} title="Головна">
+          {/* Заменили Link на div с handleNavigation, чтобы сайдбар закрывался при клике */}
+          <div onClick={() => handleNavigation('/')} className="nav-link" style={{ ...linkStyle, cursor: 'pointer' }} title="Головна">
             <Home size={20} className="nav-icon" />
             <span className="nav-text">Головна</span>
-          </Link>
-          <Link to="/favorites" className="nav-link" style={linkStyle} title="Обране">
+          </div>
+          <div onClick={() => handleNavigation('/favorites')} className="nav-link" style={{ ...linkStyle, cursor: 'pointer' }} title="Обране">
             <Heart size={20} className="nav-icon" />
             <span className="nav-text">Обране</span>
-          </Link>
-          <Link to="/cart" className="nav-link" style={linkStyle} title="Кошик">
-            <ShoppingCart size={20} className="nav-icon" />
-            <span className="nav-text">Кошик</span>
-          </Link>
+          </div>
         </nav>
       </div>
 
@@ -84,14 +93,15 @@ const Header = ({ onSearch, onApplyFilters, socket, onMenuClick }) => {
 
         {!user ? (
           <div style={authNavStyle} className="auth-nav">
-            <Link to="/login" className="nav-link" style={linkStyle}>Увійти</Link>
-            <Link to="/register" style={registerBtnStyle} className="reg-btn">Реєстрація</Link>
+            {/* Используем handleNavigation для авторизации */}
+            <div onClick={() => handleNavigation('/login')} className="nav-link" style={{ ...linkStyle, cursor: 'pointer' }}>Увійти</div>
+            <div onClick={() => handleNavigation('/register')} style={{ ...registerBtnStyle, cursor: 'pointer' }} className="reg-btn">Реєстрація</div>
           </div>
         ) : (
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
             <div 
               className="user-profile-field"
-              onClick={() => navigate(`/profile/${user.id}`)} 
+              onClick={() => handleNavigation(`/profile/${user.id}`)} 
               style={userFieldStyle}
             >
               <User size={18} color="var(--accent)" />
@@ -137,7 +147,7 @@ const Header = ({ onSearch, onApplyFilters, socket, onMenuClick }) => {
           .header-logo-text { display: none; }
         }
 
-        /* Кнопка бургера теперь появляется синхронно на 1100px */
+        /* Кнопка бургера тепер появляется синхронно на 1100px */
         @media (max-width: 1100px) {
           .mobile-menu-btn { display: flex !important; margin-right: 5px; }
           
@@ -181,10 +191,10 @@ const Header = ({ onSearch, onApplyFilters, socket, onMenuClick }) => {
   );
 };
 
-/* Подняли zIndex шапки до 1005, чтобы бургер-кнопка оставалась кликабельной поверх оверлея (1000) и шторки меню (1001) */
-const headerStyle = { background: '#2c1e1a', padding: '10px 30px', color: '#f5f5f5', display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 2px 5px rgba(0,0,0,0.1)', position: 'sticky', top: 0, zIndex: 1005, borderBottom: '1px solid rgba(255,255,255,0.05)', height: '60px', boxSizing: 'border-box' };
+/* Подняли zIndex шапки до 1010, чтобы бургер-кнопка оставалась кликабельной поверх оверлея (1000) */
+const headerStyle = { background: '#2c1e1a', padding: '10px 30px', color: '#f5f5f5', display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 2px 5px rgba(0,0,0,0.1)', position: 'sticky', top: 0, zIndex: 1010, borderBottom: '1px solid rgba(255,255,255,0.05)', height: '60px', boxSizing: 'border-box' };
 const leftSectionStyle = { display: 'flex', alignItems: 'center', gap: '10px' };
-const burgerBtnStyle = { display: 'none', alignItems: 'center', justifyItems: 'center', cursor: 'pointer', zIndex: 1006 };
+const burgerBtnStyle = { display: 'none', alignItems: 'center', justifyItems: 'center', cursor: 'pointer', zIndex: 1015, position: 'relative' };
 const logoWrapperStyle = { display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', flexShrink: 0 };
 const logoTextStyle = { fontSize: '18px', fontWeight: '700', color: '#fff', textTransform: 'uppercase', letterSpacing: '1px' };
 const navStyle = { display: 'flex', gap: '5px', alignItems: 'center' };

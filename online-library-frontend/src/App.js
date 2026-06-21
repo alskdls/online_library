@@ -13,11 +13,11 @@ import Login from './components/Login';
 import Register from './components/Register';
 import AddBook from './components/AddBook';
 import Favorites from './components/Favorites';
-import Cart from './components/Cart';
 import EditBook from './components/EditBook';
 import BookDetail from './components/BookDetail';
 import Profile from './components/Profile';
 import Settings from './components/Settings'; 
+import Recommendations from './components/Recommendations'; 
 
 const socket = io('http://localhost:5000');
 
@@ -41,11 +41,8 @@ function App() {
       socket.emit('user_online', user.id);
     }
 
-    // 1. Устанавливаем тему
     document.documentElement.setAttribute('data-theme', isDarkMode ? 'dark' : 'light');
 
-    // 2. ФИКС: Берем цвет фона из CSS переменных, чтобы не гадать с оттенком
-    // Используем getComputedStyle, чтобы вытянуть именно твой цвет из CSS
     const rootStyles = getComputedStyle(document.documentElement);
     const themeBg = rootStyles.getPropertyValue('--bg-main').trim() || (isDarkMode ? '#121212' : '#fdfcf0');
 
@@ -71,11 +68,14 @@ function App() {
 
   return (
     <div className={`App ${isDarkMode ? 'dark-theme' : ''}`} style={appStyle}>
+      {/* ================= ИСПРАВЛЕННЫЙ HEADER ================= */}
       <Header 
         onSearch={setSearchTerm} 
         onApplyFilters={setExtraFilters} 
         socket={socket} 
-        onMenuClick={() => setIsSidebarOpen(true)} 
+        isSidebarOpen={isSidebarOpen} 
+        onMenuClick={() => setIsSidebarOpen(!isSidebarOpen)} 
+        onClose={() => setIsSidebarOpen(false)} // <-- Добавили этот проп для закрытия сайдбара при кликах в шапке
       />
       
       <div className="main-layout" style={mainLayoutStyle}>
@@ -102,12 +102,12 @@ function App() {
             <Route path="/register" element={<Register />} />
             <Route path="/add-book" element={<AddBook />} />
             <Route path="/favorites" element={<Favorites />} />
-            <Route path="/cart" element={<Cart />} />
             <Route path="/edit-book/:id" element={<EditBook />} />
             <Route path="/book/:id" element={<BookDetail />} />
             <Route path="/profile" element={<Profile socket={socket} />} />
             <Route path="/profile/:id" element={<Profile socket={socket} />} />
             <Route path="/settings" element={<Settings />} />
+            <Route path="/recommendations" element={<Recommendations />} />
           </Routes>
         </main>
 
@@ -141,7 +141,7 @@ const appStyle = {
   display: 'flex', 
   flexDirection: 'column', 
   minHeight: '100vh',
-  backgroundColor: 'var(--bg-main)', // Возвращаем твою переменную фона
+  backgroundColor: 'var(--bg-main)', 
   color: 'var(--text-main)',
   width: '100%'
 };

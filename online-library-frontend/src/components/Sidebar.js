@@ -68,7 +68,7 @@ const Sidebar = ({ onApplyFilters, isDarkMode, toggleTheme, isOpen, onClose }) =
         @media (max-width: 1100px) {
           .sidebar-aside {
             position: fixed !important;
-            z-index: 1001;
+            z-index: 1005; /* Поставили сайдбар и кнопку Х поверх всего на мобилках */
             transform: ${isOpen ? 'translateX(0)' : 'translateX(-100%)'} !important;
           }
           .mobile-sidebar-header { 
@@ -76,7 +76,7 @@ const Sidebar = ({ onApplyFilters, isDarkMode, toggleTheme, isOpen, onClose }) =
             justify-content: space-between;
             align-items: center;
             color: #fff;
-            padding: 10px 5px;
+            padding: 15px 10px; /* Увеличили кликабельную зону */
             margin-bottom: 15px;
           }
         }
@@ -115,8 +115,8 @@ const Sidebar = ({ onApplyFilters, isDarkMode, toggleTheme, isOpen, onClose }) =
       <aside className="sidebar-aside" style={sidebarContainerStyle}>
         
         <div className="mobile-sidebar-header">
-           <span style={{fontWeight: 'bold', fontSize: '14px'}}>МЕНЮ</span>
-           <X size={22} onClick={onClose} style={{ cursor: 'pointer' }} />
+           <span style={{fontWeight: 'bold', fontSize: '14px', letterSpacing: '1px'}}>МЕНЮ</span>
+           <X size={24} onClick={onClose} style={{ cursor: 'pointer', padding: '4px', background: 'rgba(255,255,255,0.05)', borderRadius: '50%' }} />
         </div>
 
         <div className="sidebar-scrollable-content">
@@ -130,7 +130,7 @@ const Sidebar = ({ onApplyFilters, isDarkMode, toggleTheme, isOpen, onClose }) =
           </div>
 
           <div className="sidebar-item" onClick={() => menuClick('/search?sort=top')}>
-            <Trophy size={18} /> Топ книги
+            <Trophy size={18} /> Top книги
           </div>
           <div className="sidebar-item" onClick={() => menuClick('/recommendations')}>
             <Sparkles size={18} color="var(--accent)" /> Рекомендації

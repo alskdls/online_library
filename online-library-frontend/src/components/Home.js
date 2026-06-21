@@ -94,21 +94,28 @@ const Home = ({ searchQuery = '', extraFilters }) => {
 
   const filteredBooksList = getFilteredBooks();
 
+  // Обрезаем массив до 5 книг для вывода на главной
+  const topFiveRecommendations = recommendedBooks.slice(0, 5);
+
   return (
     <div style={{ padding: '40px 20px', maxWidth: '1400px', margin: '0 auto', overflowX: 'hidden' }}>
       
-      {/* ================= 1. БЛОК РЕКОМЕНДАЦИЙ ================= */}
-      {user && recommendedBooks.length > 0 && (
+      {/* ================= 1. БЛОК РЕКОМЕНДАЦИЙ (ТЕПЕРЬ КЛИКАБЕЛЬНЫЙ ЗАГОЛОВОК) ================= */}
+      {user && topFiveRecommendations.length > 0 && (
         <section style={recommendationsWrapperStyle}>
           <div style={{ textAlign: 'center', marginBottom: '30px' }}>
-            <h2 style={recommendationsTitleStyle}>
+            <h2 
+              className="genre-title-link"
+              onClick={() => navigate('/recommendations')}
+              style={recommendationsTitleStyle}
+            >
               Рекомендації для вас
             </h2>
             <div style={underlineStyle}></div>
           </div>
 
           <div className="horizontal-scroll-container" style={scrollContainerStyle}>
-            {recommendedBooks.map(book => (
+            {topFiveRecommendations.map(book => (
               <div key={`rec-${book.id}`} style={scrollItemStyle}>
                 <div style={{pointerEvents: 'auto'}}>
                   <BookCard 

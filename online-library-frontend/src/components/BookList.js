@@ -4,6 +4,7 @@ import BookCard from './BookCard';
 
 const BookList = ({ selectedGenre, searchQuery, extraFilters }) => {
   const [books, setBooks] = useState([]);
+  const [genres, setGenres] = useState([]); // Додали стан для збереження всіх жанрів
   const [favorites, setFavorites] = useState([]);
   const user = JSON.parse(localStorage.getItem('user'));
 
@@ -12,10 +13,16 @@ const BookList = ({ selectedGenre, searchQuery, extraFilters }) => {
   const urlGenreId = queryParams.get('genre');
 
   useEffect(() => {
-    fetch('http://localhost:5000/books')
-      .then(res => res.json())
-      .then(data => setBooks(data))
-      .catch(err => console.error(err));
+    // Одночасно завантажуємо книги та жанри з бэкенду
+    Promise.all([
+      fetch('http://localhost:5000/books').then(res => res.json()),
+      fetch('http://localhost:5000/genres').then(res => res.json())
+    ])
+    .then(([booksData, genresData]) => {
+      setBooks(booksData);
+      setGenres(genresData);
+    })
+    .catch(err => console.error("Помилка завантаження даних:", err));
 
     if (user) {
       fetch(`http://localhost:5000/favorites/${user.id}`)
@@ -25,12 +32,17 @@ const BookList = ({ selectedGenre, searchQuery, extraFilters }) => {
     }
   }, [user?.id]);
 
+  // Визначаємо активний ID жанру
+  const activeGenreId = urlGenreId ? parseInt(urlGenreId) : selectedGenre;
+
+  // Знаходимо назву поточного жанру для динамічного заголовка
+  const currentGenre = genres.find(g => g.id === activeGenreId);
+  const pageTitle = currentGenre ? currentGenre.name : "Всі книги";
+
   const filteredBooks = books.filter(book => {
     // 1. Поиск по названию или автору
     const matchesSearch = book.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
                           book.author.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    const activeGenreId = urlGenreId ? parseInt(urlGenreId) : selectedGenre;
 
     // Если дополнительные фильтры не применили, фильтруем только по поиску и базовому жанру
     if (!extraFilters) {
@@ -63,6 +75,15 @@ const BookList = ({ selectedGenre, searchQuery, extraFilters }) => {
 
   return (
     <div style={mainWrapperStyle}>
+      
+      {/* ================= ДИНАМІЧНИЙ ЗАГОЛОВОК ЖАНРУ ================= */}
+      <div style={{ textAlign: 'center', marginBottom: '40px' }}>
+        <h2 style={genreTitleStyle}>
+          {pageTitle}
+        </h2>
+        <div style={underlineStyle}></div>
+      </div>
+
       {filteredBooks.length > 0 ? (
         <div className="books-grid" style={gridContainerStyle}>
           {filteredBooks.map(book => (
@@ -92,6 +113,7 @@ const BookList = ({ selectedGenre, searchQuery, extraFilters }) => {
   );
 };
 
+// --- СТИЛІ ---
 const mainWrapperStyle = {
   padding: '40px 20px',
   width: '100%',
@@ -132,6 +154,24 @@ const resetAllBtnStyle = {
   fontSize: '14px',
   transition: 'all 0.3s ease',
   shadowColor: '0 4px 10px rgba(0, 0, 0, 0.2)'
+};
+
+// Стилі для красивого відображення заголовку
+const genreTitleStyle = { 
+  fontSize: '28px', 
+  color: 'var(--text-main)', 
+  margin: '0 0 10px 0', 
+  fontWeight: 'bold', 
+  textTransform: 'uppercase', 
+  letterSpacing: '1px' 
+};
+
+const underlineStyle = { 
+  height: '4px', 
+  width: '60px', 
+  background: 'var(--accent)', 
+  margin: '0 auto', 
+  borderRadius: '2px' 
 };
 
 export default BookList;
