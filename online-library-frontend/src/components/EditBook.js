@@ -20,21 +20,30 @@ const EditBook = () => {
     });
   }, [id]);
 
+  // ЭТА ФУНКЦИЯ БЫЛА УДАЛЕНА, Я ЕЕ ВЕРНУЛ
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const response = await fetch(`http://localhost:5000/books/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...formData, userRole: user?.role })
-    });
+    try {
+      const response = await fetch(`http://localhost:5000/books/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...formData, userRole: user?.role })
+      });
 
-    if (response.ok) {
-      alert("Зміни збережено!");
-      navigate('/');
+      if (response.ok) {
+        alert("Зміни збережено!");
+        navigate('/');
+      } else {
+        const errorText = await response.text();
+        alert("Помилка: " + errorText);
+      }
+    } catch (err) {
+      console.error("Fetch error:", err);
+      alert("Не вдалося підключитися до сервера");
     }
   };
 
@@ -57,6 +66,7 @@ const EditBook = () => {
   );
 };
 
+// Стили остаются прежними
 const containerStyle = { 
   maxWidth: '450px', 
   margin: '50px auto', 

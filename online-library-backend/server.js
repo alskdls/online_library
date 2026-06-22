@@ -92,6 +92,30 @@ app.get('/users/:id/reactions', async (req, res) => {
     }
 });
 
+// Эндпоинт для редактирования книги
+app.put('/books/:id', async (req, res) => {
+  const { id } = req.params;
+  const { title, author, description, pages, genre_id, image_url, price, year } = req.body;
+  
+  try {
+    const updatedBook = await pool.query(
+      `UPDATE books 
+       SET title = $1, author = $2, description = $3, pages = $4, genre_id = $5, image_url = $6, price = $7, year = $8
+       WHERE id = $9 RETURNING *`,
+      [title, author, description, pages, genre_id, image_url, price, year, id]
+    );
+
+    if (updatedBook.rows.length === 0) {
+      return res.status(404).send("Книга не знайдена");
+    }
+
+    res.json(updatedBook.rows[0]);
+  } catch (err) {
+    console.error("Помилка оновлення:", err.message);
+    res.status(500).send("Помилка сервера");
+  }
+});
+
 // --- КОРИСТУВАЧІ ТА ПРОФІЛІ ---
 
 app.get('/users/:id', async (req, res) => {
@@ -640,63 +664,6 @@ app.get('/api/books/recommended/:userId', async (req, res) => {
         LEFT JOIN genres ON b.genre_id = genres.id
         WHERE b.id NOT IN (SELECT book_id FROM user_books WHERE user_id = $2)
         ORDER BY b.id DESC LIMIT 10
-      `, [userId]);
-      return res.json(simpleResult.rows);
-    }
-
-    res.json(recommendedResult.rows);
-  } catch (err) {
-    console.error("Ошибка при генерации персональных рекомендаций:", err.message);
-    res.status(500).send("Ошибка сервера");
-  }
-});
-
-// 3. ПЕРСОНАЛЬНЫЕ РЕКОМЕНДАЦИИ для авторизованных пользователей
-app.get('/api/books/recommended/:userId', async (req, res) => {
-  const { userId } = req.params;
-  try {
-    // Вытягиваем ID жанров, которые пользователь лайкнул или добавил в избранное
-    const userGenresResult = await pool.query(`
-      SELECT DISTINCT b.genre_id 
-      FROM books b
-      LEFT JOIN book_reactions br ON b.id = br.book_id
-      LEFT JOIN favorites f ON b.id = f.book_id
-      WHERE (br.user_id = $1 AND br.type = 'like') OR f.user_id = $1
-    `, [userId]);
-
-    const genreIds = userGenresResult.rows.map(row => row.genre_id).filter(id => id !== null);
-
-    // Если у пользователя еще нет предпочтений (новый аккаунт), отдаем популярное
-    if (genreIds.length === 0) {
-      const fallbackResult = await pool.query(`
-        SELECT b.*, genres.name AS genre_name 
-        FROM books b
-        LEFT JOIN genres ON b.genre_id = genres.id
-        ORDER BY b.id DESC LIMIT 5
-      `);
-      return res.json(fallbackResult.rows);
-    }
-
-    // Ищем книги из любимых жанров, которые юзер еще НЕ читал/НЕ добавил в списки
-const recommendedResult = await pool.query(`
-  SELECT b.*, genres.name AS genre_name
-  FROM books b
-  LEFT JOIN genres ON b.genre_id = genres.id
-  WHERE b.genre_id = ANY($1::int[])
-    AND b.id NOT IN (
-      SELECT book_id FROM user_books WHERE user_id = $2
-    )
-  ORDER BY RANDOM()
-  LIMIT 5
-`, [genreIds, userId]);
-
-    // Если в этих жанрах ничего нового нет, добираем просто свежие книги сайта
-    if (recommendedResult.rows.length === 0) {
-      const simpleResult = await pool.query(`
-        SELECT b.*, genres.name AS genre_name FROM books b 
-        LEFT JOIN genres ON b.genre_id = genres.id
-        WHERE b.id NOT IN (SELECT book_id FROM user_books WHERE user_id = $2)
-        ORDER BY b.id DESC LIMIT 5
       `, [userId]);
       return res.json(simpleResult.rows);
     }
